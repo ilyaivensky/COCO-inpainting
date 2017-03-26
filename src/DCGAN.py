@@ -50,13 +50,12 @@ class Discriminator(Model):
         print (self.layers[-1].name, x_shape)
          
         self.layers.append(
-            lasagne.layers.batch_norm(
-                lasagne.layers.Conv2DLayer(
-                    self.layers[-1],
-                    name='Conv2DLayer1',
-                    num_filters=64, filter_size=4, stride=2, pad=1,
-                    nonlinearity=custom_rectify,
-                    W=lasagne.init.HeNormal(gain='relu'))))
+            lasagne.layers.Conv2DLayer(
+                self.layers[-1],
+                name='Conv2DLayer1',
+                num_filters=64, filter_size=4, stride=2, pad=1,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
               
         print (self.layers[-1].name, self.layers[-1].output_shape)
       
@@ -140,12 +139,13 @@ class Discriminator(Model):
         print (self.layers[-1].name, self.layers[-1].output_shape)
         
         self.layers.append(
-            lasagne.layers.DenseLayer(
-                self.layers[-1], 
-                name='DenseLayer', 
-                num_units=1,
-                nonlinearity=lasagne.nonlinearities.sigmoid,
-                W=lasagne.init.HeNormal(gain=1.0)))
+            lasagne.layers.batch_norm(
+                lasagne.layers.DenseLayer(
+                    self.layers[-1], 
+                    name='DenseLayer', 
+                    num_units=1,
+                    nonlinearity=lasagne.nonlinearities.sigmoid,
+                    W=lasagne.init.HeNormal(gain=1.0))))
         
     
         print (self.layers[-1].name, self.layers[-1].output_shape)
@@ -227,13 +227,12 @@ class Generator(Model):
         print (self.layers[-1].name, self.layers[-1].output_shape)
         
         self.layers.append(
-            lasagne.layers.batch_norm(
-                lasagne.layers.Deconv2DLayer(
-                    self.layers[-1], 
-                    name='Deconv2DLayer1',
-                    nonlinearity=lasagne.nonlinearities.sigmoid, 
-                    num_filters=3, filter_size=4, stride=2, crop=1,
-                    W=lasagne.init.HeNormal(gain=1.0))))
+            lasagne.layers.Deconv2DLayer(
+                self.layers[-1], 
+                name='Deconv2DLayer1',
+                nonlinearity=lasagne.nonlinearities.sigmoid, 
+                num_filters=3, filter_size=4, stride=2, crop=1,
+                W=lasagne.init.HeNormal(gain=1.0)))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
         
