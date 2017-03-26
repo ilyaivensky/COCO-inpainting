@@ -65,16 +65,17 @@ def main(data_file, num_epochs=100, initial_eta=2e-4, params_file = None):
 
 if __name__ == '__main__':
     
-    if ('--help' in sys.argv) or ('-h' in sys.argv):
+    if ('--help' in sys.argv) or ('-h' in sys.argv) or (len(sys.argv) < 2):
         print("Trains a DCGAN on COCO using Lasagne.")
-        print("Usage: %s [EPOCHS] [MODEL_PARAMS_FILES]" % sys.argv[0])
+        print("Usage: %s [DATA_FILE] [EPOCHS] [MODEL_PARAMS_FILES]" % sys.argv[0])
         print()
         print("EPOCHS: number of training epochs to perform (default: 100)")
     else:
         kwargs = {}
-        if len(sys.argv) > 1:
-            kwargs['num_epochs'] = int(sys.argv[1])
+        kwargs['data_file'] = str(sys.argv[1])
         if len(sys.argv) > 2:
-            kwargs['params_file'] = str(sys.argv[2])
+            kwargs['num_epochs'] = int(sys.argv[2])
+        if len(sys.argv) > 3:
+            kwargs['params_file'] = str(sys.argv[3])
             
         main(**kwargs)
