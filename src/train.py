@@ -33,8 +33,8 @@ def train(num_epochs, initial_eta, data_fp, split, params_file = None):
     # We iterate over epochs:
     for epoch in range(num_epochs):
         # In each epoch, we do a full pass over the training data:
-        train_d_err = 0
-        train_g_err = 0
+        train_discr_loss = 0
+        train_gen_loss = 0
         train_batches = 0
         start_time = time.time()
         
@@ -42,7 +42,9 @@ def train(num_epochs, initial_eta, data_fp, split, params_file = None):
             _, _, y_var = batch
             y_var = lasagne.utils.floatX(y_var) / 255
 
-            gan.train(y_var)
+            discr_loss, gen_loss = gan.train(y_var)
+            train_discr_loss += discr_loss
+            train_gen_loss += gen_loss
                                            
             train_batches += 1
             
@@ -52,9 +54,9 @@ def train(num_epochs, initial_eta, data_fp, split, params_file = None):
         # Then we print the results for this epoch:
         print("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
-        print("  training loss:\t\t{}".format(np.array([train_d_err, train_g_err]) / train_batches))
+        print("  training loss (D/G):\t\t{}".format(np.array([train_discr_loss, train_gen_loss]) / train_batches))
             
-    gan.save_params('../models/DCGAN1')
+    gan.save_params('../models/DCGAN')
             
 def main(data_file, num_epochs=100, initial_eta=2e-4, params_file = None):
     
