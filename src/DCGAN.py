@@ -58,16 +58,6 @@ class Discriminator(Model):
                 W=lasagne.init.HeNormal(gain='relu')))
               
         print (self.layers[-1].name, self.layers[-1].output_shape)
-      
-#         self.layers.append(
-#             lasagne.layers.MaxPool2DLayer(
-#                 self.layers[-1], 
-#                 name='MaxPool2DLayer1', pool_size=(2, 2)))
-#         
-#           
-#         x_shape = self.layers[-1].get_output_shape_for(x_shape)
-#         print (self.layers[-1].name, x_shape)
-#           
         
         self.layers.append(
             lasagne.layers.batch_norm(
@@ -79,18 +69,7 @@ class Discriminator(Model):
                     W=lasagne.init.HeNormal(gain='relu'))))
           
         print (self.layers[-1].name, self.layers[-1].output_shape)
-          
-#         self.layers.append(
-#             lasagne.layers.MaxPool2DLayer(
-#                 self.layers[-1], 
-#                 name='MaxPool2DLayer2', 
-#                 pool_size=(2, 2)))
-#         
-#         
-#         x_shape = self.layers[-1].get_output_shape_for(x_shape)
-#         print (self.layers[-1].name, x_shape)
-#         
-#         
+         
         self.layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.Conv2DLayer(
@@ -101,15 +80,6 @@ class Discriminator(Model):
                     W=lasagne.init.HeNormal(gain='relu'))))
         
         print (self.layers[-1].name, self.layers[-1].output_shape)
-          
-#         self.layers.append(
-#             lasagne.layers.MaxPool2DLayer(
-#                 self.layers[-1], 
-#                 name='MaxPool2DLayer3', 
-#                 pool_size=(2, 2)))
-#         
-#         x_shape = self.layers[-1].get_output_shape_for(x_shape)
-#         print (self.layers[-1].name, x_shape)     
 
         self.layers.append(
             lasagne.layers.batch_norm(
@@ -122,15 +92,6 @@ class Discriminator(Model):
                 
         print (self.layers[-1].name, self.layers[-1].output_shape)
           
-#         self.layers.append(
-#             lasagne.layers.MaxPool2DLayer(
-#                 self.layers[-1], 
-#                 name='MaxPool2DLayer3', 
-#                 pool_size=(2, 2)))
-#         
-#         x_shape = self.layers[-1].get_output_shape_for(x_shape)
-#         print (self.layers[-1].name, x_shape)      
-    
         self.layers.append(
             lasagne.layers.FlattenLayer(
                 self.layers[-1], 
@@ -303,7 +264,7 @@ class DCGAN(object):
             outputs=[probs_real_determ]
         ) 
     
-    def train(self, target):
+    def train(self, target, delay_g = False):
         
         noise = lasagne.utils.floatX(np.random.uniform(size=(len(target),100)))
         return (self.train_d(target.transpose(0,3,1,2), noise), self.train_g(noise))
@@ -316,8 +277,8 @@ class DCGAN(object):
     
     def load_params(self, file_name):
         
-        self.generator.save_params(file_name)  
-        self.discriminator.save_params(file_name) 
+        self.generator.load_params(file_name)  
+        self.discriminator.load_params(file_name) 
             
     def save_params(self, file_name):
         
