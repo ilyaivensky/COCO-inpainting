@@ -2,19 +2,23 @@ import sys
 
 import theano
 from lasagne import utils as lu
+from numpy import random as rnd 
 
 from DCGAN import DCGAN
 from utils import iterate_minibatches
 from utils import show_samples
 
 import h5py
+import argparse
 
 def predict(data_fp, split, params_file):
     
     theano.config.floatX = 'float32'
     theano.exception_verbosity='high'
     
-    batch_size=100
+    rnd.seed(87537)
+    
+    batch_size=50
     
     gan = DCGAN()     
     gan.load_params(params_file)
@@ -46,14 +50,9 @@ def main(data_file, params_file):
 
 if __name__ == '__main__':
     
-    if ('--help' in sys.argv) or ('-h' in sys.argv) or (len(sys.argv) < 3):
-        print("Predicts on COCO using Lasagne.")
-        print("Usage: %s [h5 DATA_FILE] [MODEL_PARAMS_FILES]" % sys.argv[0])
-        print()
+    parser = argparse.ArgumentParser(description='Tests predictions of trained DCGAN on COCO val2014 dataset')
+    parser.add_argument('data_file', help='h5 file with prepocessed dataset')
+    parser.add_argument('params_dir', type=str, help='directory with parameters files (npz format)')
+    args = parser.parse_args()
     
-    else:
-        kwargs = {}
-        kwargs['data_file'] = str(sys.argv[1])
-        kwargs['params_file'] = str(sys.argv[2])          
-
-        main(**kwargs)
+    main(args.data_file, args.params_dir)
