@@ -9,7 +9,6 @@ from utils import iterate_minibatches
 
 import h5py
 
-import sys
 import argparse
 import time
 
@@ -56,7 +55,7 @@ def train(num_epochs, initial_eta, data_fp, split, delay_g_training = 1, params_
                 Accumulate all minibatches, and then provide them to generator
                 """ 
                 noise_var = lasagne.utils.floatX(np.random.uniform(size=(len(y_var),100)))
-                train_D_loss += gan.train_d(y_var.transpose(0,3,1,2), noise_var)
+                train_D_loss += gan.train_D(y_var.transpose(0,3,1,2), noise_var)
                 
                 acc_idx = train_batches % delay_g_training
                 accumulated_batches[acc_idx] = batch
@@ -67,7 +66,7 @@ def train(num_epochs, initial_eta, data_fp, split, delay_g_training = 1, params_
                         _, _, y_var = acc_batch
                         y_var = lasagne.utils.floatX(y_var) / 255
                         noise_var = lasagne.utils.floatX(np.random.uniform(size=(len(y_var),100)))
-                        train_G_loss += gan.train_g(noise_var)
+                        train_G_loss += gan.train_G(noise_var)
             else:
                 loss_D, loss_G = gan.train(y_var)
                 train_D_loss += loss_D

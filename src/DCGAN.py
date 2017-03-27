@@ -53,7 +53,7 @@ class Discriminator(Model):
             lasagne.layers.Conv2DLayer(
                 self.layers[-1],
                 name='Conv2DLayer1',
-                num_filters=64, filter_size=4, stride=2, pad=1,
+                num_filters=64, filter_size=5, stride=2, pad=2,
                 nonlinearity=custom_rectify,
                 W=lasagne.init.HeNormal(gain='relu')))
               
@@ -64,7 +64,7 @@ class Discriminator(Model):
                 lasagne.layers.Conv2DLayer(
                     self.layers[-1], 
                     name='Conv2DLayer2', 
-                    num_filters=128, filter_size=4, stride=2, pad=1,
+                    num_filters=128, filter_size=5, stride=2, pad=5,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
           
@@ -75,7 +75,7 @@ class Discriminator(Model):
                 lasagne.layers.Conv2DLayer(
                     self.layers[-1], 
                     name='Conv2DLayer3', 
-                    num_filters=256, filter_size=4, stride=2, pad=1,
+                    num_filters=256, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
         
@@ -86,7 +86,7 @@ class Discriminator(Model):
                 lasagne.layers.Conv2DLayer(
                     self.layers[-1], 
                     name='Conv2DLayer4', 
-                    num_filters=512, filter_size=4, stride=2, pad=1,
+                    num_filters=512, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
                 
@@ -160,7 +160,8 @@ class Generator(Model):
                     self.layers[-1], 
                     name='Deconv2DLayer4', 
                     nonlinearity=custom_rectify,
-                    num_filters=256, filter_size=4, stride=2, crop=1,
+                    num_filters=256, filter_size=5, stride=2, crop=2,
+                    output_size=8,
                     W=lasagne.init.HeNormal(gain='relu'))))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
@@ -171,7 +172,8 @@ class Generator(Model):
                     self.layers[-1], 
                     name='Deconv2DLayer3', 
                     nonlinearity=custom_rectify,
-                    num_filters=128, filter_size=4, stride=2, crop=1,
+                    num_filters=128, filter_size=5, stride=2, crop=2,
+                    output_size=16,
                     W=lasagne.init.HeNormal(gain='relu'))))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
@@ -182,7 +184,8 @@ class Generator(Model):
                     self.layers[-1], 
                     name='Deconv2DLayer2', 
                     nonlinearity=custom_rectify,
-                    num_filters=64, filter_size=4, stride=2, crop=1,
+                    num_filters=64, filter_size=5, stride=2, crop=2,
+                    output_size=32,
                     W=lasagne.init.HeNormal(gain='relu'))))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
@@ -192,7 +195,8 @@ class Generator(Model):
                 self.layers[-1], 
                 name='Deconv2DLayer1',
                 nonlinearity=lasagne.nonlinearities.sigmoid, 
-                num_filters=3, filter_size=4, stride=2, crop=1,
+                num_filters=3, filter_size=5, stride=2, crop=2,
+                output_size=64,
                 W=lasagne.init.HeNormal(gain=1.0)))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
@@ -204,21 +208,21 @@ class DCGAN(object):
     
     def __init__(self):
         
-        z = T.matrix('z') 
-        y = T.tensor4('y')
-        y = y.dimshuffle((0, 3, 1, 2))
+        noise = T.matrix('noise') 
+        images = T.tensor4('images')
+        images = images.dimshuffle((0, 3, 1, 2))
     
-        self.generator = Generator(z)
-        self.discriminator = Discriminator(y)
+        self.generator = Generator(noise)
+        self.discriminator = Discriminator(images)
         
         print("Compiling Theano functions...")
         
-        img_fake = lasagne.layers.get_output(self.generator.nn, inputs=z)
-        img_fake_determ = lasagne.layers.get_output(self.generator.nn, inputs=z, deterministic=True)
+        img_fake = lasagne.layers.get_output(self.generator.nn, inputs=noise)
+        img_fake_determ = lasagne.layers.get_output(self.generator.nn, inputs=noise, deterministic=True)
         
         # Create expression for passing real data through the discriminator
-        probs_real = lasagne.layers.get_output(self.discriminator.nn, inputs=y)
-        probs_real_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=y, deterministic=True)
+        probs_real = lasagne.layers.get_output(self.discriminator.nn, inputs=images)
+        probs_real_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=images, deterministic=True)
          
         # Create expression for passing fake data through the discriminator
         probs_fake = lasagne.layers.get_output(self.discriminator.nn, inputs=img_fake)
@@ -226,53 +230,53 @@ class DCGAN(object):
         
          
         # Create loss expressions
-        generator_loss = lasagne.objectives.binary_crossentropy(probs_fake, 1).mean()
-        discriminator_loss = (lasagne.objectives.binary_crossentropy(probs_real, 1)
-               + lasagne.objectives.binary_crossentropy(probs_fake, 0)).mean()
-                 
+        loss_G = lasagne.objectives.binary_crossentropy(probs_fake, 0.9).mean()
+        loss_D = (lasagne.objectives.binary_crossentropy(probs_real, 0.9)
+               + lasagne.objectives.binary_crossentropy(probs_fake, 0.0)).mean()
+        
                  
         # Create update expressions for training
-        generator_params = lasagne.layers.get_all_params(self.generator.nn, trainable=True)
-        discriminator_params = lasagne.layers.get_all_params(self.discriminator.nn, trainable=True)
+        params_G = lasagne.layers.get_all_params(self.generator.nn, trainable=True)
+        params_D = lasagne.layers.get_all_params(self.discriminator.nn, trainable=True)
          
         #   eta = theano.shared(lasagne.utils.floatX(initial_eta))
-        generator_updates = lasagne.updates.adam(generator_loss, generator_params, learning_rate=0.001, beta1=0.9)
-        discriminator_updates = lasagne.updates.adam(discriminator_loss, discriminator_params, learning_rate=0005, beta1=0.6)
+        updates_G = lasagne.updates.adam(loss_G, params_G, learning_rate=0.001, beta1=0.9)
+        updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0005, beta1=0.6)
         
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
-        self.train_d = theano.function(
-                [y,z],
-                outputs=discriminator_loss,
-                updates=discriminator_updates
+        self.train_D = theano.function(
+                [images,noise],
+                outputs=loss_D,
+                updates=updates_D
                 )
         
-        self.train_g = theano.function(
-                [z],
-                outputs=generator_loss,
-                updates=generator_updates
+        self.train_G = theano.function(
+                [noise],
+                outputs=loss_G,
+                updates=updates_G
                 )
     
         # Compile another function generating some data
         self.predict_fake = theano.function(
-            [z],
+            [noise],
             outputs=[img_fake_determ, probs_fake_determ]
         ) 
     
         self.predict_real = theano.function(
-            [y],
+            [images],
             outputs=[probs_real_determ]
         ) 
     
-    def train(self, target, delay_g = False):
+    def train(self, image_var, delay_g = False):
         
-        noise = lasagne.utils.floatX(np.random.uniform(size=(len(target),100)))
-        return (self.train_d(target.transpose(0,3,1,2), noise), self.train_g(noise))
+        noise_var = lasagne.utils.floatX(np.random.uniform(size=(len(image_var),100)))
+        return (self.train_D(image_var.transpose(0,3,1,2), noise_var), self.train_G(noise_var))
     
     def predict(self, target, nb_samples):
         
-        noise = lasagne.utils.floatX(np.random.uniform(size=(nb_samples,100)))
-        return self.predict_fake(noise)
+        noise_var = lasagne.utils.floatX(np.random.uniform(size=(nb_samples,100)))
+        return self.predict_fake(noise_var)
    
     
     def load_params(self, file_name):
