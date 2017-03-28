@@ -64,7 +64,7 @@ class Discriminator(Model):
                 lasagne.layers.Conv2DLayer(
                     self.layers[-1], 
                     name='Conv2DLayer2', 
-                    num_filters=128, filter_size=5, stride=2, pad=5,
+                    num_filters=128, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
           
@@ -130,7 +130,7 @@ class Generator(Model):
         self.layers.append(
             lasagne.layers.InputLayer(
                 shape=(None, 100), 
-                name='InputLayer', 
+                name='InputLayer_Noise', 
                 input_var=input_var))
         
         print (self.layers[-1].name, self.layers[-1].output_shape) 
@@ -155,48 +155,80 @@ class Generator(Model):
         print (self.layers[-1].name, self.layers[-1].output_shape)
         
         self.layers.append(
+            lasagne.layers.Upscale2DLayer(
+                self.layers[-1],
+                name='Upscale2DLayer4',
+                scale_factor=2,
+                mode='repeat'))
+        
+        print (self.layers[-1].name, self.layers[-1].output_shape)
+        
+        self.layers.append(
             lasagne.layers.batch_norm(
-                lasagne.layers.Deconv2DLayer(
+                lasagne.layers.Conv2DLayer(
                     self.layers[-1], 
-                    name='Deconv2DLayer4', 
+                    name='Conv2DLayer4', 
                     nonlinearity=custom_rectify,
-                    num_filters=256, filter_size=5, stride=2, crop=2,
-                    output_size=8,
+                    num_filters=256, filter_size=5, stride=1, pad=2,
                     W=lasagne.init.HeNormal(gain='relu'))))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
         
         self.layers.append(
+            lasagne.layers.Upscale2DLayer(
+                self.layers[-1],
+                name='Upscale2DLayer3',
+                scale_factor=2,
+                mode='repeat'))
+        
+        print (self.layers[-1].name, self.layers[-1].output_shape)
+        
+        self.layers.append(
             lasagne.layers.batch_norm(
-                lasagne.layers.Deconv2DLayer(
+                lasagne.layers.Conv2DLayer(
                     self.layers[-1], 
-                    name='Deconv2DLayer3', 
+                    name='Conv2DLayer3', 
                     nonlinearity=custom_rectify,
-                    num_filters=128, filter_size=5, stride=2, crop=2,
-                    output_size=16,
+                    num_filters=128, filter_size=5, stride=1, pad=2,
                     W=lasagne.init.HeNormal(gain='relu'))))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
         
         self.layers.append(
+            lasagne.layers.Upscale2DLayer(
+                self.layers[-1],
+                name='Upscale2DLayer2',
+                scale_factor=2,
+                mode='repeat'))
+        
+        print (self.layers[-1].name, self.layers[-1].output_shape)
+        
+        self.layers.append(
             lasagne.layers.batch_norm(
-                lasagne.layers.Deconv2DLayer(
+                lasagne.layers.Conv2DLayer(
                     self.layers[-1], 
-                    name='Deconv2DLayer2', 
+                    name='Conv2DLayer2', 
                     nonlinearity=custom_rectify,
-                    num_filters=64, filter_size=5, stride=2, crop=2,
-                    output_size=32,
+                    num_filters=64, filter_size=5, stride=1, pad=2,
                     W=lasagne.init.HeNormal(gain='relu'))))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
         
         self.layers.append(
-            lasagne.layers.Deconv2DLayer(
+            lasagne.layers.Upscale2DLayer(
+                self.layers[-1],
+                name='Upscale2DLayer1',
+                scale_factor=2,
+                mode='repeat'))
+        
+        print (self.layers[-1].name, self.layers[-1].output_shape)
+        
+        self.layers.append(
+            lasagne.layers.Conv2DLayer(
                 self.layers[-1], 
-                name='Deconv2DLayer1',
+                name='Conv2DLayer1',
                 nonlinearity=lasagne.nonlinearities.sigmoid, 
-                num_filters=3, filter_size=5, stride=2, crop=2,
-                output_size=64,
+                num_filters=3, filter_size=5, stride=1, pad=2,
                 W=lasagne.init.HeNormal(gain=1.0)))
          
         print (self.layers[-1].name, self.layers[-1].output_shape)
@@ -270,12 +302,12 @@ class DCGAN(object):
     
     def train(self, image_var, delay_g = False):
         
-        noise_var = lasagne.utils.floatX(np.random.uniform(size=(len(image_var),100)))
+        noise_var = lasagne.utils.floatX(np.random.randint(low=0, high=256, size=(len(image_var),100)))
         return (self.train_D(image_var.transpose(0,3,1,2), noise_var), self.train_G(noise_var))
     
     def predict(self, target, nb_samples):
         
-        noise_var = lasagne.utils.floatX(np.random.uniform(size=(nb_samples,100)))
+        noise_var = lasagne.utils.floatX(np.random.randint(low=0, high=256, size=(nb_samples,100)))
         return self.predict_fake(noise_var)
    
     
