@@ -273,7 +273,7 @@ class DCGAN(object):
          
         #   eta = theano.shared(lasagne.utils.floatX(initial_eta))
         updates_G = lasagne.updates.adam(loss_G, params_G, learning_rate=0.001, beta1=0.9)
-        updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0005, beta1=0.6)
+        updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0.005, beta1=0.6)
         
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
