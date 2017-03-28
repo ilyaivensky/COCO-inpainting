@@ -18,7 +18,7 @@ def predict(data_fp, split, params_file):
     
     rnd.seed(87537)
     
-    batch_size=50
+    batch_size=10
     
     gan = DCGAN()     
     gan.load_params(params_file)
@@ -32,9 +32,8 @@ def predict(data_fp, split, params_file):
         _, _, y_var = batch
         y_var = lu.floatX(y_var) / 255
         
-        nb_examples = 10
-        samples, loss = gan.predict(y_var, nb_examples)
-        show_samples(y_var[:nb_examples], samples)
+        samples, loss = gan.predict(y_var, batch_size)
+        show_samples(y_var, samples)
         predict_loss += loss
         nr_batches += 1
         
