@@ -57,7 +57,7 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
         num_batches *= delay_g_training
         
     # Finally, launch the training loop.
-    logging.info('Starting training: num_epochs={}, delay_g_training={}, data_fp={}'.format(num_epochs, delay_g_training, data_fp))
+    logging.info('Starting training: num_epochs={}, num_batches={}, delay_g_training={}, data_fp={}'.format(num_epochs, num_batches, delay_g_training, data_fp))
     
     # We iterate over epochs:
     for epoch in range(num_epochs):
