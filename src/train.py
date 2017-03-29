@@ -11,8 +11,31 @@ import h5py
 
 import argparse
 import time
+import os
 
 import logging
+import logging.config
+
+import yaml
+
+def setup_logging(
+    default_path='logging.yaml',
+    default_level=logging.INFO,
+    env_key='LOG_CFG'):
+    """
+    Setup logging configuration
+    """
+    path = default_path
+    value = os.getenv(env_key, None)
+    if value:
+        path = value
+    if os.path.exists(path):
+        with open(path, 'rt') as f:
+            config = yaml.safe_load(f.read())
+        logging.config.dictConfig(config)
+    else:
+        logging.basicConfig(level=default_level)
+
 
 def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training = 1, params_file = None):
     
@@ -34,7 +57,7 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
         num_batches *= delay_g_training
         
     # Finally, launch the training loop.
-    logging.info("Starting training...")
+    logging.info('Starting training: num_epochs={}, delay_g_training={}, data_fp={}'.format(num_epochs, delay_g_training, data_fp))
     
     # We iterate over epochs:
     for epoch in range(num_epochs):
@@ -90,10 +113,8 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
             
 def main(data_file, num_epochs=100, num_batches=None, initial_eta=2e-4, delay_g_training=1, params_file=None, log_file=None):
     
-    logging.basicConfig(filename=log_file, level=logging.INFO, filemode='w', format='%(asctime)s %(message)s')
-    
     logger = logging.getLogger(__name__)
-    logger.info('Loading data...')
+    logger.info('Loading data from {}...'.format(data_file))
     
     with h5py.File(data_file,'r') as hf:
         train(num_epochs, num_batches, initial_eta, hf, 'train2014', delay_g_training, params_file)
@@ -101,6 +122,8 @@ def main(data_file, num_epochs=100, num_batches=None, initial_eta=2e-4, delay_g_
 
 if __name__ == '__main__':
 
+    setup_logging(default_path='logging.yaml')
+    
     parser = argparse.ArgumentParser(description='Trains a DCGAN on COCO using Lasagne')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
     parser.add_argument('-n', '--num_epochs', type=int, default=100, help='number of epochs (default: 100)')
