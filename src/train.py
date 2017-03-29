@@ -12,6 +12,8 @@ import h5py
 import argparse
 import time
 
+import logging
+
 def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training = 1, params_file = None):
     
     theano.config.floatX = 'float32'
@@ -19,7 +21,7 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
     
     np.random.seed(87537)
     
-    batch_size=100
+    batch_size=128
     
     gan = DCGAN()
     
@@ -32,7 +34,7 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
         num_batches *= delay_g_training
         
     # Finally, launch the training loop.
-    print("Starting training...")
+    logging.info("Starting training...")
     
     # We iterate over epochs:
     for epoch in range(num_epochs):
@@ -80,29 +82,34 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
       
 
         # Then we print the results for this epoch:
-        print("Epoch {} of {} took {:.3f}s".format(
+        logging.info("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
-        print("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / train_batches))
+        logging.info("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / train_batches))
             
     gan.save_params('../models/DCGAN')
             
-def main(data_file, num_epochs=100, num_batches=None, initial_eta=2e-4, delay_g_training=1, params_file=None):
+def main(data_file, num_epochs=100, num_batches=None, initial_eta=2e-4, delay_g_training=1, params_file=None, log_file=None):
     
-    print("Loading data...")
+    logging.basicConfig(filename=log_file, level=logging.INFO, filemode='w', format='%(asctime)s %(message)s')
+    
+    logger = logging.getLogger(__name__)
+    logger.info('Loading data...')
+    
     with h5py.File(data_file,'r') as hf:
         train(num_epochs, num_batches, initial_eta, hf, 'train2014', delay_g_training, params_file)
 
 
 if __name__ == '__main__':
-    
+
     parser = argparse.ArgumentParser(description='Trains a DCGAN on COCO using Lasagne')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
     parser.add_argument('-n', '--num_epochs', type=int, default=100, help='number of epochs (default: 100)')
     parser.add_argument('-d', '--delay_g_training', type=int, default=1, help='delay (num mini-batches) in generator training (default=1)')
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--num_batches', type=int, help='the max number of batches to train (defailt: None, meaning train all batches). If provided, it will be multiplied by delay_g_training')
+    parser.add_argument('-l', '--log_file', type=str, default='../logs/train.log', help='file name for logging')
     
     args = parser.parse_args()
  
     main(args.data_file, num_epochs=args.num_epochs, 
-         params_file=args.params_dir, delay_g_training=args.delay_g_training, num_batches=args.num_batches)
+         params_file=args.params_dir, delay_g_training=args.delay_g_training, num_batches=args.num_batches, log_file=args.log_file)
