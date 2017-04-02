@@ -96,7 +96,7 @@ class Discriminator(Model):
 
 class Generator(Model):
 
-    def __init__(self, input_var=None):
+    def __init__(self, noise_var=None):
         
         Model.__init__(self, "Generator")
         
@@ -110,7 +110,7 @@ class Generator(Model):
             lasagne.layers.InputLayer(
                 shape=(None, 100), 
                 name='InputLayer_Noise', 
-                input_var=input_var))
+                input_var=noise_var))
         
         self.logger.debug('{}, {}'.format(self.layers[-1].name, self.layers[-1].output_shape))
     
@@ -253,8 +253,8 @@ class DCGAN(object):
         params_D = lasagne.layers.get_all_params(self.discriminator.nn, trainable=True)
          
         #   eta = theano.shared(lasagne.utils.floatX(initial_eta))
-        updates_G = lasagne.updates.adam(loss_G, params_G, learning_rate=0.001, beta1=0.9)
-        updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0.005, beta1=0.6)
+        updates_G = lasagne.updates.adam(loss_G, params_G, learning_rate=0.0002, beta1=0.5)
+        updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0.0002, beta1=0.5)
         
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
@@ -273,24 +273,23 @@ class DCGAN(object):
         # Compile another function generating some data
         self.predict_fake = theano.function(
             [noise],
-            outputs=[img_fake_determ, probs_fake_determ]
+            outputs=[img_fake, probs_fake]
         ) 
     
         self.predict_real = theano.function(
             [images],
-            outputs=[probs_real_determ]
+            outputs=[probs_real]
         ) 
     
     def train(self, image_var, delay_g = False):
         
-        noise_var = lasagne.utils.floatX(np.random.randint(low=0, high=256, size=(len(image_var),100)))
+        noise_var = lasagne.utils.floatX(np.random.randn(len(image_var),100))
         return (self.train_D(image_var.transpose(0,3,1,2), noise_var), self.train_G(noise_var))
     
     def predict(self, target, nb_samples):
         
-        noise_var = lasagne.utils.floatX(np.random.randint(low=0, high=256, size=(nb_samples,100)))
-        return self.predict_fake(noise_var)
-   
+        noise_var = lasagne.utils.floatX(np.random.randn(nb_samples,100))
+        return self.predict_fake(noise_var)  
     
     def load_params(self, file_name):
         

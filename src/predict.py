@@ -1,29 +1,21 @@
-import sys
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import theano
 from lasagne import utils as lu
 from numpy import random as rnd 
 
 from DCGAN import DCGAN
-from utils import iterate_minibatches
+from utils import iterate_minibatches, setup_logging
 from utils import show_samples
 
 import h5py
 import argparse
+import logging
 
-def predict(data_fp, split, params_file):
-    
-    theano.config.floatX = 'float32'
-    theano.exception_verbosity='high'
-    
-    rnd.seed(87537)
-    
-    batch_size=10
-    
-    gan = DCGAN()     
-    gan.load_params(params_file)
-    
-    print("Starting predicting...")
+def predict(model, data_fp, split, batch_size):
+      
+    logging.info("Starting predicting...")
    
     predict_loss = 0
     nr_batches = 0
@@ -32,26 +24,42 @@ def predict(data_fp, split, params_file):
         _, _, y_var = batch
         y_var = lu.floatX(y_var) / 255
         
-        samples, loss = gan.predict(y_var, batch_size)
+        samples, loss = model.predict(y_var, batch_size)
         show_samples(y_var, samples)
         predict_loss += loss
         nr_batches += 1
         
         break
 
-    print("  prediction loss:\t\t{}".format(predict_loss / nr_batches))
+    logging.info("  prediction loss:\t\t{}".format(predict_loss / nr_batches))
 
-def main(data_file, params_file):  
+def main(data_file, params_file):
     
-    print("Loading data...")
+    logger = logging.getLogger(__name__)
+    logger.info('Loading data from {}...'.format(data_file))  
+    
+    gan = DCGAN()     
+    gan.load_params(params_file)
+    
+    batch_size=10
+    
     with h5py.File(data_file,'r') as hf:
-        predict(hf, 'val2014', params_file)
+        predict(gan, hf, 'val2014', batch_size)
 
 if __name__ == '__main__':
     
+    theano.config.floatX = 'float32'
+    theano.exception_verbosity='high'
+    
+    rnd.seed(87537)
+    
     parser = argparse.ArgumentParser(description='Tests predictions of trained DCGAN on COCO val2014 dataset')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
-    parser.add_argument('params_dir', type=str, help='directory with parameters files (npz format)')
+    parser.add_argument('-m','--model', type=str, help='model name')
+    parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
+    
     args = parser.parse_args()
     
-    main(args.data_file, args.params_dir)
+    setup_logging(default_path=args.log_file)
+    
+    main(args.data_file, args.model)

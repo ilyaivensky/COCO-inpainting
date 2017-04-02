@@ -4,40 +4,18 @@ import lasagne
 import numpy as np
 
 from DCGAN import DCGAN
-from utils import iterate_minibatches
-
+from utils import iterate_minibatches, setup_logging
 
 import h5py
 
 import argparse
 import time
-import os
 
 import logging
-import logging.config
 
-import yaml
+#from predict import predict
 
-def setup_logging(
-    default_path='logging.yaml',
-    default_level=logging.INFO,
-    env_key='LOG_CFG'):
-    """
-    Setup logging configuration
-    """
-    path = default_path
-    value = os.getenv(env_key, None)
-    if value:
-        path = value
-    if os.path.exists(path):
-        with open(path, 'rt') as f:
-            config = yaml.safe_load(f.read())
-        logging.config.dictConfig(config)
-    else:
-        logging.basicConfig(level=default_level)
-
-
-def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training = 1, params_file = None):
+def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training = 1, params_file = None):
     
     theano.config.floatX = 'float32'
     theano.exception_verbosity='high'
@@ -93,7 +71,7 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
                     for acc_batch in accumulated_batches:
                         _, _, y_var = acc_batch
                         y_var = lasagne.utils.floatX(y_var) / 255
-                        noise_var = lasagne.utils.floatX(np.random.randint(slow=0, high=256, ize=(len(y_var),100)))
+                        noise_var = lasagne.utils.floatX(np.random.randn(len(y_var),100))
                         train_G_loss += gan.train_G(noise_var)
             else:
                 loss_D, loss_G = gan.train(y_var)
@@ -110,31 +88,35 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
         logging.info("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / train_batches))
         
         # Be on a safe side - if the job is killed, it is better to preserve at least something
-        if epoch % 10 == 0 or epoch == num_epochs - 1:
-            gan.save_params('../models/DCGAN.{}'.format(epoch + 1))
+
+        if epoch % 10 == 9 or epoch == num_epochs - 1:
+            gan.save_params('{}.{}'.format(out_model, epoch + 1))
             
-def main(data_file, num_epochs=100, num_batches=None, initial_eta=2e-4, delay_g_training=1, params_file=None, log_file=None):
+#    predict(gan, data_fp, 'val2014', 10)
+            
+def main(data_file, out_model, num_epochs=100, num_batches=None, initial_eta=2e-4, delay_g_training=1, params_file=None):
     
     logger = logging.getLogger(__name__)
     logger.info('Loading data from {}...'.format(data_file))
     
     with h5py.File(data_file,'r') as hf:
-        train(num_epochs, num_batches, initial_eta, hf, 'train2014', delay_g_training, params_file)
+        train(out_model, num_epochs, num_batches, initial_eta, hf, 'train2014', delay_g_training, params_file)
 
 
 if __name__ == '__main__':
-
-    setup_logging(default_path='logging.yaml')
-    
+ 
     parser = argparse.ArgumentParser(description='Trains a DCGAN on COCO using Lasagne')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
     parser.add_argument('-n', '--num_epochs', type=int, default=100, help='number of epochs (default: 100)')
     parser.add_argument('-d', '--delay_g_training', type=int, default=1, help='delay (num mini-batches) in generator training (default=1)')
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--num_batches', type=int, help='the max number of batches to train (defailt: None, meaning train all batches). If provided, it will be multiplied by delay_g_training')
-    parser.add_argument('-l', '--log_file', type=str, default='../logs/train.log', help='file name for logging')
+    parser.add_argument('-o', '--out_model', type=str, default='../models.DCGAN', help='otput model')
+    parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
     
     args = parser.parse_args()
+    
+    setup_logging(default_path=args.log_file)
  
     main(args.data_file, num_epochs=args.num_epochs, 
-         params_file=args.params_dir, delay_g_training=args.delay_g_training, num_batches=args.num_batches, log_file=args.log_file)
+         params_file=args.params_dir, delay_g_training=args.delay_g_training, out_model=args.out_model, num_batches=args.num_batches)
