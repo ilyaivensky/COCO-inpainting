@@ -108,8 +108,10 @@ def train(num_epochs, num_batches, initial_eta, data_fp, split, delay_g_training
         logging.info("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
         logging.info("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / train_batches))
-            
-    gan.save_params('../models/DCGAN')
+        
+        # Be on a safe side - if the job is killed, it is better to preserve at least something
+        if epoch % 10 == 0 or epoch == num_epochs - 1:
+            gan.save_params('../models/DCGAN.{}'.format(epoch))
             
 def main(data_file, num_epochs=100, num_batches=None, initial_eta=2e-4, delay_g_training=1, params_file=None, log_file=None):
     
