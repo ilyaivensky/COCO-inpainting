@@ -1,38 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import theano
 from theano import tensor as T
-
 import lasagne
-    
 import numpy as np
 
 import logging
 
-class Model(object):
-    
-    def __init__(self, name):
+from model import Model 
 
-        self.nn = None
-        self.name = name
-        self.logger = logging.getLogger(__name__)
-
-        
-    def save_params(self, file_name):
-        
-        fname = "%s.%s.npz" % (file_name, self.name)
-        params = lasagne.layers.get_all_param_values(self.nn) 
-        self.logger.debug("{}: saving network params to {}, total {}".format(self.name, fname, len(params)))
-        np.savez(fname, *params)
-       
-    def load_params(self, file_name):
-        
-        fname = "%s.%s.npz" % (file_name, self.name)
-        self.logger.debug("{}: loading network params from ".format(self.name, fname))
-    
-        with np.load(fname) as f:
-            param_values = [f['arr_%d' % i] for i in range(len(f.files))]
-            lasagne.layers.set_all_param_values(self.nn, param_values)
-        
-        
 class Discriminator(Model):
     
     def __init__(self, input_var=None):
@@ -48,8 +25,6 @@ class Discriminator(Model):
                 shape=(None, 3, 64, 64),
                 name='InputLayer',
                 input_var=input_var))
-        
-        x_shape = self.layers[-1].shape
         
         self.logger.debug('{}, {}'.format(self.layers[-1].name, self.layers[-1].output_shape))
          
