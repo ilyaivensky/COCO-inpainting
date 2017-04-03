@@ -3,6 +3,8 @@
 
 import theano
 from lasagne import utils as lu
+
+import numpy as np
 from numpy import random as rnd 
 
 from DCGAN import DCGAN
@@ -21,13 +23,13 @@ def predict(model, data_fp, split, batch_size):
     nr_batches = 0
     
     for batch in iterate_minibatches(data_fp, split, batch_size, shuffle=False):
-        x_var, _, y_var = batch
+        x, _, y = batch
         
-        x_var = lu.floatX(x_var) / 255
-        y_var = lu.floatX(y_var) / 255
+        x_var = lu.floatX(x) / 255
+        y_var = lu.floatX(y) / 255
         
         samples, loss = model.predict(x_var, y_var, batch_size)
-        show_samples(y_var, samples)
+        show_samples(y, (samples.transpose(0,2,3,1) * 255).astype(np.uint8))
         predict_loss += loss
         nr_batches += 1
         

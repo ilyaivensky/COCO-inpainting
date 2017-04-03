@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import division
+
 import theano
 from theano import tensor as T
 import lasagne
@@ -328,8 +330,10 @@ class DCGAN(object):
         
         self.logger.info("Compiling Theano functions...")
         
-        img_fake = lasagne.layers.get_output(
-            self.generator.nn)
+#         noise_vec, border_img = lasagne.layers.get_output(
+#             [self.generator.in_noise, self.generator.in_border])
+        
+        img_fake = lasagne.layers.get_output(self.generator.nn)
     #    img_fake_determ = lasagne.layers.get_output(self.generator.nn, inputs=noise, deterministic=True)
         
         # Create expression for passing real data through the discriminator
@@ -368,7 +372,12 @@ class DCGAN(object):
                 outputs=loss_G,
                 updates=updates_G
                 )
-    
+#         
+#         self.test_G_inputs = theano.function(
+#                 [noise,border],
+#                 outputs=[noise_vec,border_img]
+#                 )
+#     
         # Compile another function generating some data
         self.predict_fake = theano.function(
             [noise,border],

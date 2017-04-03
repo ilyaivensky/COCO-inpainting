@@ -55,7 +55,6 @@ def show_samples(target, samples):
     import math
     
     nb_samples = len(samples)
-    s = (samples.transpose(0,2,3,1) * 255).astype(np.uint8)
     
     ncol = 10
     nrows = math.ceil(nb_samples / ncol) * 2
@@ -65,11 +64,10 @@ def show_samples(target, samples):
     for i in range(nb_samples):
             
         plt.subplot(nrows, ncol, num_real + 1)
-        plt.imshow((target[i] * 255).astype(np.uint8))
+        plt.imshow(target[i])
     
-        img_pred = np.copy(s[i])
         plt.subplot(nrows, ncol, num_real + ncol + 1)
-        plt.imshow(img_pred)
+        plt.imshow(samples[i])
         
         num_real += 1
         if num_real % ncol == 0:
