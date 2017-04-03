@@ -23,7 +23,7 @@ class Model(object):
     def load_params(self, file_name):
         
         fname = "%s.%s.npz" % (file_name, self.name)
-        self.logger.info("Loading network params from ".format(fname))
+        self.logger.info("Loading network params from {}".format(fname))
     
         with np.load(fname) as f:
             param_values = [f['arr_%d' % i] for i in range(len(f.files))]
