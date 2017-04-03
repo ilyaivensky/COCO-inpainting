@@ -27,34 +27,36 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
     gan = DCGAN()
     
     # Load the dataset
-  
+   
     if not params_file is None:
         gan.load_params(params_file)
-        
+         
     if (not num_batches is None):
         num_batches *= delay_g_training
-        
+         
     # Finally, launch the training loop.
     logging.info('Starting training: num_epochs={}, num_batches={}, delay_g_training={}, data_fp={}'.format(num_epochs, num_batches, delay_g_training, data_fp))
-    
+     
     # We iterate over epochs:
     for epoch in range(num_epochs):
         # In each epoch, we do a full pass over the training data:
         train_D_loss = 0
         train_G_loss = 0
         train_batches = 0
-        
+         
         start_time = time.time()
-        
+         
         accumulated_batches = [None] * delay_g_training
-        
+         
         for batch in iterate_minibatches(data_fp, split, batch_size, shuffle=False):
-            
+             
             train_batches += 1
+             
+            x_var, _, y_var = batch
             
-            _, _, y_var = batch
+            x_var = lasagne.utils.floatX(x_var) / 255
             y_var = lasagne.utils.floatX(y_var) / 255
-
+ 
             if delay_g_training > 1:
                 """
                 Train discriminator right away, but delay generator training.
@@ -62,36 +64,39 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
                 """ 
                 noise_var = lasagne.utils.floatX(np.random.randint(low=0, high=256, size=(len(y_var),100)))
                 train_D_loss += gan.train_D(y_var.transpose(0,3,1,2), noise_var)
-                
+                 
                 acc_idx = train_batches % delay_g_training
                 accumulated_batches[acc_idx] = batch
-            
+             
                 if  acc_idx == 0:
                     # train generator with accumulated batches
                     for acc_batch in accumulated_batches:
-                        _, _, y_var = acc_batch
+                        
+                        x_var, _, y_var = acc_batch
+                        x_var = lasagne.utils.floatX(x_var) / 255
                         y_var = lasagne.utils.floatX(y_var) / 255
+                        
                         noise_var = lasagne.utils.floatX(np.random.randn(len(y_var),100))
-                        train_G_loss += gan.train_G(noise_var)
+                        train_G_loss += gan.train_G(noise_var, x_var.transpose(0,3,1,2))
             else:
-                loss_D, loss_G = gan.train(y_var)
+                loss_D, loss_G = gan.train(x_var.transpose(0,3,1,2), y_var.transpose(0,3,1,2))
                 train_D_loss += loss_D
                 train_G_loss += loss_G
-                
+                 
             if (not num_batches is None) and (train_batches == num_batches):
                 break
-      
-
+       
+ 
         # Then we print the results for this epoch:
         logging.info("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
         logging.info("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / train_batches))
-        
+         
         # Be on a safe side - if the job is killed, it is better to preserve at least something
 
         if epoch % 10 == 9 or epoch == num_epochs - 1:
             gan.save_params('{}.{}'.format(out_model, epoch + 1))
-            
+             
 #    predict(gan, data_fp, 'val2014', 10)
             
 def main(data_file, out_model, num_epochs=100, num_batches=None, initial_eta=2e-4, delay_g_training=1, params_file=None):

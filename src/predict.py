@@ -21,10 +21,12 @@ def predict(model, data_fp, split, batch_size):
     nr_batches = 0
     
     for batch in iterate_minibatches(data_fp, split, batch_size, shuffle=False):
-        _, _, y_var = batch
+        x_var, _, y_var = batch
+        
+        x_var = lu.floatX(x_var) / 255
         y_var = lu.floatX(y_var) / 255
         
-        samples, loss = model.predict(y_var, batch_size)
+        samples, loss = model.predict(x_var, y_var, batch_size)
         show_samples(y_var, samples)
         predict_loss += loss
         nr_batches += 1
