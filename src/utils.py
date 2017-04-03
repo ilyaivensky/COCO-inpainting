@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import division
+
 import os
 
 import matplotlib.pyplot as plt
@@ -47,20 +49,30 @@ def iterate_minibatches(hfp, split, batchsize, shuffle=False):
             excerpt = slice(start_idx, start_idx + batchsize)
         yield x[excerpt], z[excerpt], y[excerpt]
             
-   
-        
+          
 def show_samples(target, samples):
 
+    import math
+    
     nb_samples = len(samples)
     s = (samples.transpose(0,2,3,1) * 255).astype(np.uint8)
     
+    ncol = 10
+    nrows = math.ceil(nb_samples / ncol) * 2
+    
+    num_real = 0
+
     for i in range(nb_samples):
             
-        plt.subplot(2, nb_samples, i+1)
+        plt.subplot(nrows, ncol, num_real + 1)
         plt.imshow((target[i] * 255).astype(np.uint8))
     
         img_pred = np.copy(s[i])
-        plt.subplot(2, nb_samples, nb_samples+i+1)
+        plt.subplot(nrows, ncol, num_real + ncol + 1)
         plt.imshow(img_pred)
-    
+        
+        num_real += 1
+        if num_real % ncol == 0:
+            num_real += ncol
+            
     plt.show()

@@ -43,7 +43,7 @@ def main(data_file, params_file):
     gan = DCGAN()     
     gan.load_params(params_file)
     
-    batch_size=10
+    batch_size=30
     
     with h5py.File(data_file,'r') as hf:
         predict(gan, hf, 'val2014', batch_size)
