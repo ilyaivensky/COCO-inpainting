@@ -1,0 +1,5 @@
+eclipse.preferences.version=1
+encoding//src/DCGAN.py=utf-8
+encoding//src/model.py=utf-8
+encoding//src/predict.py=utf-8
+encoding//src/utils.py=utf-8
