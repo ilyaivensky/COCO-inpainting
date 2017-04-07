@@ -30,9 +30,7 @@ def predict(model, data_fp, split, w2v_model, batch_size):
     
     for batch in iterator.iterate_minibatches(batch_size, shuffle=False):
         ids, x, y, captions = batch
-        
-        print captions
-        
+           
         x_var = lu.floatX(x) / 255
         y_var = lu.floatX(y) / 255
         

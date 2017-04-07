@@ -86,10 +86,7 @@ def show_samples(id, target, samples, captions, vocab_idx):
         indices = [idx for idx, e in enumerate(captions[i]) if e != 0]
         if not indices:
             logging.warning('Empty captions for {}'.format(id[i]))
-        
-        for ii in indices:
-            print vocab_idx[ii]
-            
+             
         plt.subplot(nrows, ncol, num_real + 1)
         plt.imshow(target[i])
     

@@ -9,7 +9,7 @@ import lasagne
 import numpy as np
 
 from DCGAN import DCGAN
-from utils import iterate_minibatches, setup_logging
+from utils import DataIterator, setup_logging
 
 import h5py
 
@@ -38,6 +38,8 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
          
     if (not num_batches is None):
         num_batches *= delay_g_training
+        
+    iterator = DataIterator(data_fp, split)
          
     # Finally, launch the training loop.
     logging.info('Starting training: num_epochs={}, num_batches={}, delay_g_training={}, data_fp={}'.format(num_epochs, num_batches, delay_g_training, data_fp))
@@ -53,14 +55,15 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
          
         accumulated_batches = [None] * delay_g_training
          
-        for batch in iterate_minibatches(data_fp, split, batch_size, shuffle=False):
+        for batch in iterator.iterate_minibatches(batch_size, shuffle=False):
              
             train_batches += 1
              
-            _, x_var, y_var, cations = batch
+            _, x, y, captions = batch
             
-            x_var = lasagne.utils.floatX(x_var) / 255
-            y_var = lasagne.utils.floatX(y_var) / 255
+            x_var = lasagne.utils.floatX(x) / 255
+            y_var = lasagne.utils.floatX(y) / 255
+            captions_var = lasagne.utils.floatX(captions)
  
             if delay_g_training > 1:
                 """
@@ -68,7 +71,7 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
                 Accumulate all minibatches, and then provide them to generator
                 """ 
                 noise_var = lasagne.utils.floatX(np.random.randint(low=0, high=256, size=(len(y_var),100)))
-                train_D_loss += gan.train_D(y_var.transpose(0,3,1,2), noise_var)
+                train_D_loss += gan.train_D(y_var.transpose(0,3,1,2), noise_var, x_var)
                  
                 acc_idx = train_batches % delay_g_training
                 accumulated_batches[acc_idx] = batch
