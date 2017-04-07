@@ -29,13 +29,14 @@ def predict(model, data_fp, split, w2v_model, batch_size):
     nr_batches = 0
     
     for batch in iterator.iterate_minibatches(batch_size, shuffle=False):
-        ids, x, y, captions = batch
+        ids, x, y, caps = batch
            
         x_var = lu.floatX(x) / 255
         y_var = lu.floatX(y) / 255
+        caps_var = lu.floatX(caps)
         
-        samples, loss = model.predict(x_var, y_var, batch_size)
-        show_samples(ids, y, (samples.transpose(0,2,3,1) * 255).astype(np.uint8), captions, vocab_idx)
+        samples, loss = model.predict(x_var, y_var, caps_var, batch_size)
+        show_samples(ids, y, (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, vocab_idx)
         predict_loss += loss
         nr_batches += 1
         
