@@ -59,11 +59,11 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
              
             train_batches += 1
              
-            _, x, y, captions = batch
+            _, x, y, caps = batch
             
             x_var = lasagne.utils.floatX(x) / 255
             y_var = lasagne.utils.floatX(y) / 255
-            captions_var = lasagne.utils.floatX(captions)
+            caps_var = lasagne.utils.floatX(caps)
  
             if delay_g_training > 1:
                 """
@@ -71,7 +71,7 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
                 Accumulate all minibatches, and then provide them to generator
                 """ 
                 noise_var = lasagne.utils.floatX(np.random.randint(low=0, high=256, size=(len(y_var),100)))
-                train_D_loss += gan.train_D(y_var.transpose(0,3,1,2), noise_var, x_var)
+                train_D_loss += gan.train_D(y_var.transpose(0,3,1,2), caps_var, noise_var, x_var)
                  
                 acc_idx = train_batches % delay_g_training
                 accumulated_batches[acc_idx] = batch
@@ -87,7 +87,7 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
                         noise_var = lasagne.utils.floatX(np.random.randn(len(y_var),100))
                         train_G_loss += gan.train_G(noise_var, x_var.transpose(0,3,1,2))
             else:
-                loss_D, loss_G = gan.train(x_var.transpose(0,3,1,2), y_var.transpose(0,3,1,2))
+                loss_D, loss_G = gan.train(caps_var, x_var.transpose(0,3,1,2), y_var.transpose(0,3,1,2))
                 train_D_loss += loss_D
                 train_G_loss += loss_G
                  

@@ -52,7 +52,7 @@ class DataIterator(object):
         capt_indptr = hfp['/%s/capt/indptr' % split]
     
         self.captions = sparse.csr_matrix((capt_data, capt_indices, capt_indptr), shape=capt_matrix_shape)
-        self.logger.info('Restored one-hot matrix of captions, shape=({},{})'.format(self.captions.shape[0], self.captions.shape[1]))
+        self.logger.info('Reconstructed one-hot matrix of captions, shape=({},{})'.format(self.captions.shape[0], self.captions.shape[1]))
     
         assert len(self.x) == len(self.y)
         
