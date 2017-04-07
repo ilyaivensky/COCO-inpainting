@@ -57,7 +57,7 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, delay
              
             train_batches += 1
              
-            x_var, _, y_var = batch
+            _, x_var, y_var, cations = batch
             
             x_var = lasagne.utils.floatX(x_var) / 255
             y_var = lasagne.utils.floatX(y_var) / 255

@@ -7,15 +7,18 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import sparse
 
 import logging.config
 
 import yaml
 
 def setup_logging(
+        
     default_path='logging.yaml',
     default_level=logging.INFO,
     env_key='LOG_CFG'):
+    
     """
     Setup logging configuration
     """
@@ -30,27 +33,44 @@ def setup_logging(
     else:
         logging.basicConfig(level=default_level)
 
-def iterate_minibatches(hfp, split, batchsize, shuffle=False):
-        
-    x = hfp['/%s/x' % split]
-    z = hfp['/%s/z' % split]
-    y = hfp['/%s/y' % split]
+class DataIterator(object):
     
-    assert len(x) == len(y)
-    assert len(x) == len(z)
-
-    if shuffle:
-        indices = np.arange(len(x))
-        np.random.shuffle(indices)
-    for start_idx in range(0, len(x) - batchsize + 1, batchsize):
+    def __init__(self, hfp, split):
+        
+        self.logger = logging.getLogger('DataIterator')
+        
+        self.ids = hfp['/%s/id' % split]
+        
+        self.x = hfp['/%s/frame' % split]
+        self.y = hfp['/%s/img' % split]
+    
+        capt_grp = hfp['/%s/capt' % split]
+        capt_matrix_shape = (capt_grp.attrs['shape0'], capt_grp.attrs['shape1'])
+        
+        capt_data = hfp['/%s/capt/data' % split]
+        capt_indices = hfp['/%s/capt/indices' % split]
+        capt_indptr = hfp['/%s/capt/indptr' % split]
+    
+        self.captions = sparse.csr_matrix((capt_data, capt_indices, capt_indptr), shape=capt_matrix_shape)
+        self.logger.info('Restored one-hot matrix of captions, shape=({},{})'.format(self.captions.shape[0], self.captions.shape[1]))
+    
+        assert len(self.x) == len(self.y)
+        
+    def iterate_minibatches(self, batchsize, shuffle=False):
+            
         if shuffle:
-            excerpt = indices[start_idx:start_idx + batchsize]
-        else:
-            excerpt = slice(start_idx, start_idx + batchsize)
-        yield x[excerpt], z[excerpt], y[excerpt]
+            indices = np.arange(len(self.x))
+            np.random.shuffle(indices)
+        for start_idx in range(0, len(self.x) - batchsize + 1, batchsize):
+            if shuffle:
+                excerpt = indices[start_idx:start_idx + batchsize]
+            else:
+                excerpt = slice(start_idx, start_idx + batchsize)
+                        
+            yield self.ids[excerpt], self.x[excerpt], self.y[excerpt], self.captions[excerpt].toarray()
             
           
-def show_samples(target, samples):
+def show_samples(id, target, samples, captions, vocab_idx):
 
     import math
     
@@ -62,6 +82,13 @@ def show_samples(target, samples):
     num_real = 0
 
     for i in range(nb_samples):
+            
+        indices = [idx for idx, e in enumerate(captions[i]) if e != 0]
+        if not indices:
+            logging.warning('Empty captions for {}'.format(id[i]))
+        
+        for ii in indices:
+            print vocab_idx[ii]
             
         plt.subplot(nrows, ncol, num_real + 1)
         plt.imshow(target[i])
