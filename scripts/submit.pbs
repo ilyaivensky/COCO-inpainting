@@ -11,5 +11,5 @@ source p2.7/bin/activate
 THEANO_FLAGS=’floatX=float32,device=gpu’
 
 cd $HOME/COCO-inpainting/src
-python train.py ../resources/inpainting.h5
+python train_GAN.py ../preprocessed/inpainting.h5 -u 1
 
