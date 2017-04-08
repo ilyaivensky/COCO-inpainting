@@ -5,7 +5,6 @@ from __future__ import division
 
 import os
 
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy import sparse
 
@@ -73,6 +72,7 @@ class DataIterator(object):
 def show_samples(id, target, samples, captions, vocab_idx):
 
     import math
+    import matplotlib.pyplot as plt
     
     nb_samples = len(samples)
     
