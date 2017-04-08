@@ -9,7 +9,7 @@ import gensim
 import numpy as np
 from numpy import random as rnd 
 
-from DCGAN import DCGAN
+from GAN import GAN
 from utils import DataIterator, setup_logging
 from utils import show_samples
 
@@ -50,7 +50,7 @@ def main(data_file, params_file, w2v_file):
     logger = logging.getLogger(__name__)
     logger.info('Loading data from {}...'.format(data_file))  
     
-    gan = DCGAN()     
+    gan = GAN()     
     gan.load_params(params_file)
     
     batch_size=30

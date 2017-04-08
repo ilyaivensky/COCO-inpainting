@@ -333,7 +333,7 @@ class Generator(Model):
         
 #         print ('params', len(lasagne.layers.get_all_param_values(self.nn)))
         
-class DCGAN(object):
+class GAN(object):
     
     def __init__(self):
         

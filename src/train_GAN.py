@@ -8,7 +8,7 @@ import lasagne
 
 import numpy as np
 
-from DCGAN import DCGAN
+from GAN import GAN
 from utils import DataIterator, setup_logging
 
 import h5py
@@ -29,7 +29,7 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, unrol
     
     batch_size=128
     
-    gan = DCGAN()
+    gan = GAN()
     
     # Load the dataset
    
