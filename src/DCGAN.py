@@ -382,9 +382,10 @@ class DCGAN(object):
         
          
         # Create loss expressions
-        loss_G = lasagne.objectives.binary_crossentropy(probs_fake, 0.9).mean()
-        loss_D = (lasagne.objectives.binary_crossentropy(probs_real, 0.9)
-               + lasagne.objectives.binary_crossentropy(probs_fake, 0.0)).mean()
+        loss_G = lasagne.objectives.binary_crossentropy(probs_fake, 0.9).mean()               
+        loss_D_real = lasagne.objectives.binary_crossentropy(probs_real, 0.9).mean()
+        loss_D_fake = lasagne.objectives.binary_crossentropy(probs_fake, 0.0).mean()
+        loss_D = loss_D_real + loss_D_fake
         
                  
         # Create update expressions for training
@@ -394,6 +395,8 @@ class DCGAN(object):
         #   eta = theano.shared(lasagne.utils.floatX(initial_eta))
         updates_G = lasagne.updates.adam(loss_G, params_G, learning_rate=0.0002, beta1=0.5)
         updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0.0002, beta1=0.5)
+        updates_D_real = lasagne.updates.adam(loss_D_real, params_D, learning_rate=0.0002, beta1=0.5)
+        updates_D_fake = lasagne.updates.adam(loss_D_fake, params_D, learning_rate=0.0002, beta1=0.5)
         
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
@@ -401,6 +404,18 @@ class DCGAN(object):
                 [images,caps,noise,border],
                 outputs=loss_D,
                 updates=updates_D
+                )
+        
+        self.train_D_real = theano.function(
+                [images,caps],
+                outputs=loss_D_real,
+                updates=updates_D_real
+                )
+        
+        self.train_D_fake = theano.function(
+                [caps,noise,border],
+                outputs=loss_D_fake,
+                updates=updates_D_fake
                 )
         
         self.train_G = theano.function(
@@ -425,16 +440,20 @@ class DCGAN(object):
             outputs=[probs_real]
         ) 
     
-    def train(self, caps_var, border_var, image_var, delay_g = False):
+    def train(self, caps_var, border_var, image_var, noise_var):
         
-        noise_var = lasagne.utils.floatX(np.random.randn(len(image_var),100))
         return (self.train_D(image_var, caps_var, noise_var, border_var), 
                 self.train_G(caps_var, noise_var, border_var))
-    
-    def predict(self, border, target, nb_samples):
         
-        noise_var = lasagne.utils.floatX(np.random.randn(nb_samples,100))
-        return self.predict_fake(noise_var, border.transpose(0,3,1,2))  
+    def train_real(self, image_var, caps_var):
+        return self.train_D_real(image_var, caps_var)
+    
+    def train_fake(self, noise_var, border_var, caps_var):
+        return (self.train_D_fake(caps_var, noise_var, border_var),
+                self.train_G(caps_var, noise_var, border_var))
+    
+    def predict(self, border_var, caps_var, noise_var):
+        return self.predict_fake(noise_var, border_var, caps_var)  
     
     def load_params(self, file_name):
         
