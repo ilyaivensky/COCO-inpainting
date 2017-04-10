@@ -17,7 +17,7 @@ import logging
 from word2vec import train_w2v
 from tokenizer import Tokenizer
 
-
+from fuel.datasets import H5PYDataset
 
 def preprocess_split(data_path, caption_dict, wv):
 
@@ -109,34 +109,62 @@ def main():
         
     with h5py.File(os.path.join(preprocessed_path,'inpainting.h5'),'w') as hf:
         
+        splits = ['train2014','val2014']
         
-        for split in ['train2014','val2014']:
+        split_dict = {}
+        
+        for split in splits:
             
             logging.info('processing {}'.format(split))
             split_path = os.path.join(data_path, split)
             ids,x,y,capt = preprocess_split(split_path, caption_dict, wv)
             logging.info('{} examples: {}'.format(split, len(x)))
             
+            local_dict = {}
+            
             grp = hf.create_group(split)
             
             ids_data = grp.create_dataset("id", (ids.shape), dtype=np.uint32)
             ids_data[...] = ids
             
+            local_dict['{}/id'.format(split)] = (0, len(ids))
+            
             x_data = grp.create_dataset("frame", (x.shape), dtype=np.uint8)
             x_data[...] = x
+            x_data.dims[0].label = 'batch'
+            x_data.dims[1].label = 'height'
+            x_data.dims[2].label = 'width'
+            x_data.dims[3].label = 'channel'
+            
+            local_dict['{}/frame'.format(split)] = (0, len(x))
+           
             y_data = grp.create_dataset("img", (y.shape), dtype=np.uint8)
             y_data[...] = y
+            y_data.dims[0].label = 'batch'
+            y_data.dims[1].label = 'height'
+            y_data.dims[2].label = 'width'
+            y_data.dims[3].label = 'channel'
             
+            local_dict['{}/img'.format(split)] = (0, len(y))
+            
+            # Store sparse matrix as a group
             capt_grp = grp.create_group('capt')
             capt_grp.attrs['shape0'] = capt.shape[0]
             capt_grp.attrs['shape1'] = capt.shape[1]
             
             capt_data = capt_grp.create_dataset("data", (capt.data.shape), dtype=np.uint32)
             capt_data[...] = capt.data
+            local_dict['{}/capt'.format(split)] = (0, capt.shape[0])
+            
             capt_indices = capt_grp.create_dataset("indices", (capt.indices.shape), dtype=np.uint32)
             capt_indices[...] = capt.indices
             capt_indptr = capt_grp.create_dataset("indptr", (capt.indptr.shape), dtype=np.uint32)
             capt_indptr[...] = capt.indptr
+            
+            split_dict[split] = local_dict
+    
+        
+        hf.attrs['split'] = H5PYDataset.create_split_array(split_dict)
 
 if __name__=='__main__':
     

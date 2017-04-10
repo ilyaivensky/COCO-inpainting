@@ -9,7 +9,7 @@ import lasagne
 import numpy as np
 
 from GAN import GAN
-from utils import DataIterator, setup_logging
+from utils import setup_logging
 
 import h5py
 
@@ -18,67 +18,70 @@ import time
 
 import logging
 
+
+from dataset import H5PYSparseDataset
+from fuel.schemes import SequentialScheme
+#from fuel.transformers import Transformer
+#from PIL import Image
+
 #from predict import predict
 
-def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, unroll = 1, params_file = None):
+def train(out_model, num_epochs, num_batches, initial_eta, data_file, split, batch_size, unroll = 1, params_file = None):
     
     theano.config.floatX = 'float32'
-    theano.exception_verbosity='high'
     
     np.random.seed(87537)
     
-    batch_size=128
+    data = H5PYSparseDataset(
+        data_file, 
+        (split,), 
+        sources=('train2014/frame', 'train2014/img', 'train2014/capt'), 
+        load_in_memory=True)
+    
+    data.example_iteration_scheme = SequentialScheme(data.num_examples, batch_size)
     
     gan = GAN()
-    
-    # Load the dataset
-   
     if params_file is not None:
         gan.load_params(params_file)
-         
-    if (num_batches is not None):
-        num_batches *= unroll
-        
-    iterator = DataIterator(data_fp, split)
-         
-    # Finally, launch the training loop.
-    logging.info('Starting training: num_epochs={}, num_batches={}, unroll={}, data_fp={}'.format(num_epochs, num_batches, unroll, data_fp))
-     
-    # We iterate over epochs:
+    
+    logging.info('Starting training: num_epochs={}, num_batches={}, unroll={}, data_file={}'.format(num_epochs, num_batches, unroll, data_file))
+   
+    data_stream = data.get_example_stream()
+    
     for epoch in range(num_epochs):
         # In each epoch, we do a full pass over the training data:
         train_D_loss = 0
         train_G_loss = 0
         train_batches = 0
-         
+        
+        data_stream.reset()
+          
         start_time = time.time()
-         
+          
         if unroll is not None:
             accumulated_batches = [None] * unroll
          
-        for batch in iterator.iterate_minibatches(batch_size, shuffle=False):
-             
+        for frames, imgs, caps in data_stream.get_epoch_iterator():
+            
             train_batches += 1
              
-            _, x, y, caps = batch
-            
-            x_var = (lasagne.utils.floatX(x) / 255).transpose(0,3,1,2)
-            y_var = (lasagne.utils.floatX(y) / 255).transpose(0,3,1,2)
-            
+            x_var = (lasagne.utils.floatX(frames) / 255).transpose(0,3,1,2)
+            y_var = (lasagne.utils.floatX(imgs) / 255).transpose(0,3,1,2)
+             
             noise_var = lasagne.utils.floatX(np.random.randn(len(y_var),100))
-            
+             
             caps_var = lasagne.utils.floatX(caps)
- 
+  
             if unroll is not None:
                 """
                 Train discriminator on real images right away, but delay training on fake ones
                 Accumulate all minibatches, and then train discriminator and generator on fake images
                 """ 
                 train_D_loss += gan.train_real(y_var, caps_var)
-                 
+                  
                 acc_idx = train_batches % unroll
                 accumulated_batches[acc_idx] = (x_var, noise_var, caps_var)
-              
+               
                 if acc_idx == 0:
                     # train generator with accumulated batches
                     for acc_batch in accumulated_batches: 
@@ -86,25 +89,25 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_fp, split, unrol
                         loss_D, loss_G = gan.train_fake(noise_var, x_var, caps_var)
                         train_D_loss += loss_D
                         train_G_loss += loss_G
-                        
+                         
             else:
                 loss_D, loss_G = gan.train(caps_var, x_var, y_var, noise_var)
                 train_D_loss += loss_D
                 train_G_loss += loss_G
-                 
+                  
             if (num_batches is not None) and (train_batches == num_batches):
                 break
-       
- 
+        
+  
         # Then we print the results for this epoch:
         logging.info("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
         logging.info("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / train_batches))
-
+ 
         # Be on a safe side - if the job is killed, it is better to preserve at least something
         if epoch % 10 == 9 or epoch == num_epochs - 1:
             gan.save_params('{}.{}'.format(out_model, epoch + 1))
-             
+              
 #    predict(gan, data_fp, 'val2014', 10)
             
 def main(data_file, out_model, num_epochs=100, num_batches=None, initial_eta=2e-4, unroll=1, params_file=None, log_file=None):
@@ -112,8 +115,8 @@ def main(data_file, out_model, num_epochs=100, num_batches=None, initial_eta=2e-
     logger = logging.getLogger(__name__)
     logger.info('Loading data from {}...'.format(data_file))
     
-    with h5py.File(data_file,'r') as hf:
-        train(out_model, num_epochs, num_batches, initial_eta, hf, 'train2014', unroll, params_file)
+ #   with h5py.File(data_file,'r') as hf:
+    train(out_model, num_epochs, num_batches, initial_eta, data_file, 'train2014', 128, unroll, params_file)
 
 
 if __name__ == '__main__':

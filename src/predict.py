@@ -10,40 +10,46 @@ import numpy as np
 from numpy import random as rnd 
 
 from GAN import GAN
-from utils import DataIterator, setup_logging
-from utils import show_samples
+from utils import setup_logging, show_samples
 
-import h5py
 import argparse
 import logging
 
-def predict(model, data_fp, split, w2v_model, batch_size):
+from dataset import H5PYSparseDataset
+from fuel.schemes import SequentialScheme
+
+def predict(model, data_file, split, w2v_model, batch_size):
       
     vocab_idx = w2v_model.wv.index2word
     
     logging.info("Starting predicting...")
     
-    iterator = DataIterator(data_fp, split)
-   
-    predict_loss = 0
-    nr_batches = 0
+    data = H5PYSparseDataset(
+        data_file, 
+        (split,), 
+        sources=('val2014/id', 'val2014/frame', 'val2014/img', 'val2014/capt'), 
+        load_in_memory=True)
     
-    for batch in iterator.iterate_minibatches(batch_size, shuffle=False):
-        ids, x, y, caps = batch
-           
-        x_var = (lu.floatX(x) / 255).transpose(0,3,1,2)
+    data.example_iteration_scheme = SequentialScheme(data.num_examples, batch_size)
+    
+    predict_loss = 0
+    
+    data_stream = data.get_example_stream()
+    
+    for idxs, frames, imgs, caps in data_stream.get_epoch_iterator():
+        
+        x_var = (lu.floatX(frames) / 255).transpose(0,3,1,2)
         caps_var = lu.floatX(caps)
         
         noise_var = lu.floatX(np.random.randn(len(x_var),100))
         
         samples, loss = model.predict(x_var, caps_var, noise_var)
-        show_samples(ids, y, (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, vocab_idx)
+        show_samples(idxs, imgs, (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, vocab_idx)
         predict_loss += loss
-        nr_batches += 1
         
         break
 
-    logging.info("  prediction loss:\t\t{}".format(predict_loss / nr_batches))
+    logging.info("  prediction loss:\t\t{}".format(predict_loss))
 
 def main(data_file, params_file, w2v_file):
     
@@ -57,8 +63,8 @@ def main(data_file, params_file, w2v_file):
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
     
-    with h5py.File(data_file,'r') as hf:
-        predict(gan, hf, 'val2014', w2v_model, batch_size)
+#    with h5py.File(data_file,'r') as hf:
+    predict(gan, data_file, 'val2014', w2v_model, batch_size)
 
 if __name__ == '__main__':
     
