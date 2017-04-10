@@ -62,7 +62,6 @@ class Discriminator(Model):
                 W=lasagne.init.HeNormal(gain='relu')))
               
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        print type(layers[-1].W).__name__
         
         layers.append(
             lasagne.layers.batch_norm(
