@@ -5,6 +5,7 @@ from __future__ import division
 
 import theano
 from theano import tensor as T
+from theano import sparse as tsp
 import lasagne
 import numpy as np
 
@@ -12,6 +13,8 @@ import logging
 
 from model import Model 
 from collections import OrderedDict
+
+from sparse_matrix_utils import DenseLayerSparseInput
 
 class Discriminator(Model):
     
@@ -30,6 +33,14 @@ class Discriminator(Model):
                 name='InputLayer_Capture', 
                 input_var=capt_var)
         
+        caps_nn = lasagne.layers.batch_norm(
+                DenseLayerSparseInput(
+                    self.in_caps, 
+                    name='DenseLayer_caps', 
+                    num_units=512,
+                    nonlinearity=custom_rectify,
+                    W=lasagne.init.GlorotUniform('relu')))
+        
         self.in_img = lasagne.layers.InputLayer(
                 shape=(None, 3, 64, 64),
                 name='InputLayer_Img',
@@ -39,6 +50,9 @@ class Discriminator(Model):
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
          
+      #  W_val = lasagne.init.HeNormal(gain='relu').sample(layers[-1].output_shape)
+        
+        
         layers.append(
             lasagne.layers.Conv2DLayer(
                 layers[-1],
@@ -48,6 +62,7 @@ class Discriminator(Model):
                 W=lasagne.init.HeNormal(gain='relu')))
               
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+        print type(layers[-1].W).__name__
         
         layers.append(
             lasagne.layers.batch_norm(
@@ -91,7 +106,7 @@ class Discriminator(Model):
         
         layers.append(
             lasagne.layers.ConcatLayer(
-                [layers[-1], self.in_caps],
+                [layers[-1], caps_nn],
                 name='ConcatLayer'))
          
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
@@ -136,6 +151,16 @@ class Generator(Model):
                 shape=(None, 11188), 
                 name='InputLayer_Capture', 
                 input_var=caps_var)
+        
+        caps_nn = lasagne.layers.batch_norm(
+                DenseLayerSparseInput(
+                    self.in_caps, 
+                    name='DenseLayer_caps', 
+                    num_units=512,
+                    nonlinearity=custom_rectify,
+                    W=lasagne.init.GlorotUniform('relu')))
+        
+        self.logger.debug('{}, {}'.format(caps_nn.name, caps_nn.output_shape))
         
         layers = []
         layers.append(self.in_border)
@@ -210,7 +235,7 @@ class Generator(Model):
         
         layers.append(
             lasagne.layers.ConcatLayer(
-                [layers[-1], self.in_noise, self.in_caps],
+                [layers[-1], self.in_noise, caps_nn],
                 name='ConcatLayer'))
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
@@ -345,7 +370,7 @@ class GAN(object):
         images = T.tensor4('images')
         images = images.dimshuffle((0, 3, 1, 2))
         
-        caps = T.matrix('caps')
+        caps = tsp.csr_fmatrix('caps')
     
         self.generator = Generator(noise, border, caps)
         self.discriminator = Discriminator(images, caps)

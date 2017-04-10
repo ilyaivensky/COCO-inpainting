@@ -227,7 +227,7 @@ class H5PYSparseDataset(H5PYDataset):
             
         data = [self.in_memory_subset.index_within_subset(data_source, request)
                 if not isinstance(data_source, csr_matrix) 
-                else data_source[request,:].toarray()
+                else data_source[request,:]
                 for data_source in self.data_sources]
         shapes = [self.in_memory_subset.index_within_subset(shape, request)
                   if shape is not None else None
@@ -264,7 +264,7 @@ class H5PYSparseDataset(H5PYDataset):
                     shapes.append(None)
             else:
                 data.append(
-                    self.in_memory_sources[source_name][request,:].toarray())
+                    self.in_memory_sources[source_name][request,:])
                 shapes.append(None)
         return data, shapes
     

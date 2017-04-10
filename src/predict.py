@@ -18,6 +18,8 @@ import logging
 from dataset import H5PYSparseDataset
 from fuel.schemes import SequentialScheme
 
+from sparse_matrix_utils import sparse_floatX
+
 def predict(model, data_file, split, w2v_model, batch_size):
       
     vocab_idx = w2v_model.wv.index2word
@@ -39,7 +41,7 @@ def predict(model, data_file, split, w2v_model, batch_size):
     for idxs, frames, imgs, caps in data_stream.get_epoch_iterator():
         
         x_var = (lu.floatX(frames) / 255).transpose(0,3,1,2)
-        caps_var = lu.floatX(caps)
+        caps_var = sparse_floatX(caps)
         
         noise_var = lu.floatX(np.random.randn(len(x_var),100))
         

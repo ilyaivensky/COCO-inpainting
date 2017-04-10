@@ -3,7 +3,10 @@
 
 from __future__ import division
 
+import sys
+
 import theano
+
 import lasagne
 
 import numpy as np
@@ -23,6 +26,8 @@ from dataset import H5PYSparseDataset
 from fuel.schemes import SequentialScheme
 #from fuel.transformers import Transformer
 #from PIL import Image
+
+from sparse_matrix_utils import sparse_floatX
 
 #from predict import predict
 
@@ -70,7 +75,7 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_file, split, bat
              
             noise_var = lasagne.utils.floatX(np.random.randn(len(y_var),100))
              
-            caps_var = lasagne.utils.floatX(caps)
+            caps_var = sparse_floatX(caps)
   
             if unroll is not None:
                 """
@@ -85,6 +90,7 @@ def train(out_model, num_epochs, num_batches, initial_eta, data_file, split, bat
                 if acc_idx == 0:
                     # train generator with accumulated batches
                     for acc_batch in accumulated_batches: 
+                       
                         x_var, noise_var, caps_var = acc_batch
                         loss_D, loss_G = gan.train_fake(noise_var, x_var, caps_var)
                         train_D_loss += loss_D
@@ -123,11 +129,11 @@ if __name__ == '__main__':
  
     parser = argparse.ArgumentParser(description='Trains a DCGAN on COCO using Lasagne')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
-    parser.add_argument('-n', '--num_epochs', type=int, default=100, help='number of epochs (default: 100)')
+    parser.add_argument('-n', '--num_epochs', type=int, default=1000, help='number of epochs (default: 1000)')
     parser.add_argument('-u', '--unroll', type=int, default=None, help='unroll (num mini-batches) (default=None)')
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--num_batches', type=int, help='the max number of batches to train (defailt: None, meaning train all batches). If provided, it will be multiplied by delay_g_training')
-    parser.add_argument('-o', '--out_model', type=str, default='../models.DCGAN', help='otput model')
+    parser.add_argument('-o', '--out_model', type=str, default='../models/DCGAN', help='otput model')
     parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
     
     args = parser.parse_args()
