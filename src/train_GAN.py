@@ -133,7 +133,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--unroll', type=int, default=None, help='unroll (num mini-batches) (default=None)')
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--num_batches', type=int, help='the max number of batches to train (defailt: None, meaning train all batches). If provided, it will be multiplied by delay_g_training')
-    parser.add_argument('-o', '--out_model', type=str, default='../models/DCGAN', help='otput model')
+    parser.add_argument('-o', '--out_model', type=str, default='../models/GAN', help='otput model')
     parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
     
     args = parser.parse_args()
