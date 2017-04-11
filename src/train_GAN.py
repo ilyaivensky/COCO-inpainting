@@ -31,7 +31,7 @@ from sparse_matrix_utils import sparse_floatX
 
 #from predict import predict
 
-def train(data_file, out_model, num_epochs, batch_size, batches_on_gpu, batches_to_train=None, 
+def train(data_file, out_model, voc_size, num_epochs, batch_size, batches_on_gpu, batches_to_train=None, 
          split='train2014', initial_eta=2e-4, unroll=1, params_file=None):
     
     logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ def train(data_file, out_model, num_epochs, batch_size, batches_on_gpu, batches_
     
     data.example_iteration_scheme = SequentialScheme(data.num_examples, batch_size * batches_on_gpu)
     
-    gan = GAN(batch_size, batches_on_gpu, 11188)
+    gan = GAN(batch_size, batches_on_gpu, voc_size)
     if params_file is not None:
         gan.load_params(params_file)
     
@@ -71,31 +71,36 @@ def train(data_file, out_model, num_epochs, batch_size, batches_on_gpu, batches_
           
         start_time = time.time()
           
-        for frames, imgs, caps in data_stream.get_epoch_iterator():
+        for gpu_e, (frames, imgs, caps) in enumerate(data_stream.get_epoch_iterator()):
         
-            logging.debug('Loading {} examples to GPU'.format(len(imgs)))
+            logging.debug('{}: Loading {} examples to GPU'.format(gpu_e+1, len(imgs)))
             
             gan.frames_var.set_value((lasagne.utils.floatX(frames) / 255).transpose(0,3,1,2))
             gan.img_var.set_value((lasagne.utils.floatX(imgs) / 255).transpose(0,3,1,2))
             gan.noise_var.set_value(lasagne.utils.floatX(np.random.randn(len(imgs),100)))
             gan.caps_var.set_value(sparse_floatX(caps))
             
+            logging.debug('Done loading {} examples to GPU'.format(len(imgs)))
+            logging.debug('frames.shape={}, imgs.shape={}, caps.shape={}'.format(frames.shape, imgs.shape, caps.shape))
+            
             fi = 0
                 
-            for i in range(len(imgs))):
+            for i in range(batches_on_gpu):
        
                 train_batches += 1
                 """
                 Train discriminator on real images right away, but delay training on fake ones
                 Accumulate all minibatches, and then train discriminator and generator on fake images
                 """ 
+              #  logging.debug('real, first={}, last={}'.format(i*batch_size, (i+1)*batch_size))
                 train_D_loss += gan.train_D_real(i*batch_size, (i+1)*batch_size)
                   
                 acc_idx = train_batches % unroll
                
-                if acc_idx == 0 or i == len(imgs)-1:
+                if acc_idx == 0 or i == batches_on_gpu-1:
                     # train generator with accumulated batches
                     while fi <= i: 
+                     #   logging.debug('fake, first={}, last={}'.format(fi*batch_size, (fi+1)*batch_size))
                         train_D_loss += gan.train_D_fake(fi*batch_size, (fi+1)*batch_size)
                         train_G_loss += gan.train_G(fi*batch_size, (fi+1)*batch_size)
                         fi+=1
@@ -133,6 +138,6 @@ if __name__ == '__main__':
     
     setup_logging(default_path=args.log_file)
  
-    train(args.data_file, out_model=args.out_model, num_epochs=args.num_epochs, batch_size=args.batch_size,
+    train(args.data_file, out_model=args.out_model, voc_size=11172,  num_epochs=args.num_epochs, batch_size=args.batch_size,
          params_file=args.params_dir, batches_on_gpu=args.batches_on_gpu, unroll=args.unroll, 
          batches_to_train=args.batches_to_train)
