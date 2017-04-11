@@ -7,7 +7,7 @@ module add python/3.5.1
 module add openblas/0.2.18 
 module add CUDA/7.5
 
-source p3,5/bin/activate
+source ~/p3.5/bin/activate
 
 THEANO_FLAGS=’floatX=float32,device=gpu’
 
