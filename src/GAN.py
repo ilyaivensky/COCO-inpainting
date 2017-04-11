@@ -19,7 +19,7 @@ from sparse_matrix_utils import DenseLayerSparseInput
 
 class Discriminator(Model):
     
-    def __init__(self, img_var=None, capt_var=None):
+    def __init__(self, voc_size, img_var=None, capt_var=None):
         
         Model.__init__(self, "Discriminator")
         
@@ -30,7 +30,7 @@ class Discriminator(Model):
         self.logger.info('-----------build_discriminator-------------')
         
         self.in_caps = lasagne.layers.InputLayer(
-                shape=(None, 11188), 
+                shape=(None, voc_size), 
                 name='InputLayer_Capture', 
                 input_var=capt_var)
         
@@ -129,7 +129,7 @@ class Discriminator(Model):
 
 class Generator(Model):
 
-    def __init__(self, noise_var=None, frames_var=None, caps_var=None):
+    def __init__(self, voc_size, noise_var=None, frames_var=None, caps_var=None):
         
         Model.__init__(self, "Generator")
     
@@ -148,7 +148,7 @@ class Generator(Model):
                 input_var=frames_var)
         
         self.in_caps = lasagne.layers.InputLayer(
-                shape=(None, 11188), 
+                shape=(None, voc_size), 
                 name='InputLayer_Capture', 
                 input_var=caps_var)
         
@@ -386,8 +386,8 @@ class GAN(object):
         caps = tsp.csr_fmatrix('caps')
     
     
-        self.generator = Generator(noise, frames, caps)
-        self.discriminator = Discriminator(images, caps)
+        self.generator = Generator(voc_size, noise, frames, caps)
+        self.discriminator = Discriminator(voc_size, images, caps)
         
         """
         Theano graph
