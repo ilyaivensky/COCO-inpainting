@@ -82,7 +82,7 @@ def train(data_file, out_model, num_epochs, batch_size, batches_on_gpu, batches_
             
             fi = 0
                 
-            for i in range(batches_on_gpu):
+            for i in range(len(imgs))):
        
                 train_batches += 1
                 """
@@ -93,7 +93,7 @@ def train(data_file, out_model, num_epochs, batch_size, batches_on_gpu, batches_
                   
                 acc_idx = train_batches % unroll
                
-                if acc_idx == 0 or i == batches_on_gpu-1:
+                if acc_idx == 0 or i == len(imgs)-1:
                     # train generator with accumulated batches
                     while fi <= i: 
                         train_D_loss += gan.train_D_fake(fi*batch_size, (fi+1)*batch_size)
