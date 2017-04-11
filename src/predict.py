@@ -40,12 +40,12 @@ def predict(model, data_file, split, w2v_model, batch_size):
     
     for idxs, frames, imgs, caps in data_stream.get_epoch_iterator():
         
-        x_var = (lu.floatX(frames) / 255).transpose(0,3,1,2)
-        caps_var = sparse_floatX(caps)
-        
-        noise_var = lu.floatX(np.random.randn(len(x_var),100))
-        
-        samples, loss = model.predict(x_var, caps_var, noise_var)
+        model.frames_var.set_value((lu.floatX(frames) / 255).transpose(0,3,1,2))
+        model.noise_var.set_value(lu.floatX(np.random.randn(len(imgs),100)))
+        model.caps_var.set_value(sparse_floatX(caps))
+    
+     
+        samples, loss = model.generate(0,batch_size)
         show_samples(idxs, imgs, (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, vocab_idx)
         predict_loss += loss
         
@@ -58,10 +58,10 @@ def main(data_file, params_file, w2v_file):
     logger = logging.getLogger(__name__)
     logger.info('Loading data from {}...'.format(data_file))  
     
-    gan = GAN()     
-    gan.load_params(params_file)
-    
     batch_size=30
+    
+    gan = GAN(batch_size, 1, 11188)     
+    gan.load_params(params_file)
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
     

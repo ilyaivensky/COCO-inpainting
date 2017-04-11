@@ -8,6 +8,7 @@ from theano import tensor as T
 from theano import sparse as tsp
 import lasagne
 import numpy as np
+from scipy.sparse import csr_matrix
 
 import logging
 
@@ -128,7 +129,7 @@ class Discriminator(Model):
 
 class Generator(Model):
 
-    def __init__(self, noise_var=None, border_var=None, caps_var=None):
+    def __init__(self, noise_var=None, frames_var=None, caps_var=None):
         
         Model.__init__(self, "Generator")
     
@@ -141,10 +142,10 @@ class Generator(Model):
                 name='InputLayer_Noise', 
                 input_var=noise_var)
                 
-        self.in_border = lasagne.layers.InputLayer(
+        self.in_frames = lasagne.layers.InputLayer(
                 shape=(None, 3, 64, 64), 
                 name='InputLayer_Border', 
-                input_var=border_var)
+                input_var=frames_var)
         
         self.in_caps = lasagne.layers.InputLayer(
                 shape=(None, 11188), 
@@ -162,7 +163,7 @@ class Generator(Model):
         self.logger.debug('{}, {}'.format(caps_nn.name, caps_nn.output_shape))
         
         layers = []
-        layers.append(self.in_border)
+        layers.append(self.in_frames)
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
               
@@ -347,7 +348,7 @@ class Generator(Model):
         
         layers.append(
             lasagne.layers.ElemwiseSumLayer(
-                [layers[-1], self.in_border],
+                [layers[-1], self.in_frames],
                 name='InpaintLayer')
             )
         
@@ -359,29 +360,47 @@ class Generator(Model):
         
 class GAN(object):
     
-    def __init__(self):
+    def __init__(self, batch_size, num_on_gpu, voc_size):
         
         self.logger = logging.getLogger(__name__)
         
+        """
+        Shared variables (storing on GPU)
+        
+        """
+        self.frames_var = theano.shared(np.zeros((batch_size * num_on_gpu, 3, 64, 64), dtype=theano.config.floatX))
+        self.img_var = theano.shared(np.zeros((batch_size * num_on_gpu, 3, 64, 64), dtype=theano.config.floatX))
+        self.noise_var = theano.shared(np.zeros((batch_size * num_on_gpu, 100), dtype=theano.config.floatX))
+        self.caps_var = theano.shared(csr_matrix((batch_size * num_on_gpu, voc_size), dtype=theano.config.floatX))
+        
+        """ 
+        Theano symbolic variables
+        """
+        first_idx = T.lscalar('first_idx')
+        last_idx = T.lscalar('last_idx')
         noise = T.matrix('noise') 
-        border = T.tensor4('border')
-        border = border.dimshuffle((0, 3, 1, 2))
+        frames = T.tensor4('frames')
+        frames = frames.dimshuffle((0, 3, 1, 2))
         images = T.tensor4('images')
         images = images.dimshuffle((0, 3, 1, 2))
-        
         caps = tsp.csr_fmatrix('caps')
     
-        self.generator = Generator(noise, border, caps)
+    
+        self.generator = Generator(noise, frames, caps)
         self.discriminator = Discriminator(images, caps)
+        
+        """
+        Theano graph
+        """
         
         self.logger.info("Compiling Theano functions...")
         
-#         noise_vec, border_img = lasagne.layers.get_output(
-#             [self.generator.in_noise, self.generator.in_border])
+#         noise_vec, frames_img = lasagne.layers.get_output(
+#             [self.generator.in_noise, self.generator.in_frames])
 
         inp_G = OrderedDict()
         inp_G[self.generator.in_caps] = caps
-        inp_G[self.generator.in_border] = border
+        inp_G[self.generator.in_frames] = frames
         inp_G[self.generator.in_noise] = noise
         
         img_fake = lasagne.layers.get_output(self.generator.nn, inputs=inp_G)
@@ -422,62 +441,67 @@ class GAN(object):
         updates_D_real = lasagne.updates.adam(loss_D_real, params_D, learning_rate=0.0002, beta1=0.5)
         updates_D_fake = lasagne.updates.adam(loss_D_fake, params_D, learning_rate=0.0002, beta1=0.5)
         
-        # Compile a function performing a training step on a mini-batch (by giving
-        # the updates dictionary) and returning the corresponding training loss:
-        self.train_D = theano.function(
-                [images,caps,noise,border],
-                outputs=loss_D,
-                updates=updates_D
-                )
         
+        """
+        Theano functions
+        """
+
         self.train_D_real = theano.function(
-                [images,caps],
-                outputs=loss_D_real,
-                updates=updates_D_real
-                )
+            inputs=[first_idx,last_idx],
+            outputs=loss_D_real,
+            updates=updates_D_real,
+            givens={
+                images : self.img_var[first_idx:last_idx],
+                caps : self.caps_var[first_idx:last_idx]
+            }
+        )
         
         self.train_D_fake = theano.function(
-                [caps,noise,border],
-                outputs=loss_D_fake,
-                updates=updates_D_fake
-                )
+            inputs=[first_idx,last_idx],
+            outputs=loss_D_fake,
+            updates=updates_D_fake,
+            givens={
+                caps : self.caps_var[first_idx:last_idx],
+                noise : self.noise_var[first_idx:last_idx],
+                frames : self.frames_var[first_idx:last_idx]
+            }
+        )
         
         self.train_G = theano.function(
-                [caps,noise,border],
-                outputs=loss_G,
-                updates=updates_G
-                )
-#         
-#         self.test_G_inputs = theano.function(
-#                 [noise,border],
-#                 outputs=[noise_vec,border_img]
-#                 )
+            inputs=[first_idx,last_idx],
+            outputs=loss_G,
+            updates=updates_G,
+            givens={
+                caps : self.caps_var[first_idx:last_idx],
+                noise : self.noise_var[first_idx:last_idx],
+                frames : self.frames_var[first_idx:last_idx]
+            }
+        )
+
+        self.generate = theano.function(
+            inputs=[first_idx,last_idx],
+            outputs=[img_fake, probs_fake],
+            givens={
+                noise : self.noise_var[first_idx:last_idx],
+                frames : self.frames_var[first_idx:last_idx],
+                caps : self.caps_var[first_idx:last_idx]
+            }
+        ) 
+    
 #     
-        # Compile another function generating some data
-        self.predict_fake = theano.function(
-            [noise,border,caps],
-            outputs=[img_fake, probs_fake]
-        ) 
-    
-        self.predict_real = theano.function(
-            [images,caps],
-            outputs=[probs_real]
-        ) 
-    
-    def train(self, caps_var, border_var, image_var, noise_var):
-        
-        return (self.train_D(image_var, caps_var, noise_var, border_var), 
-                self.train_G(caps_var, noise_var, border_var))
-        
-    def train_real(self, image_var, caps_var):
-        return self.train_D_real(image_var, caps_var)
-    
-    def train_fake(self, noise_var, border_var, caps_var):
-        return (self.train_D_fake(caps_var, noise_var, border_var),
-                self.train_G(caps_var, noise_var, border_var))
-    
-    def predict(self, border_var, caps_var, noise_var):
-        return self.predict_fake(noise_var, border_var, caps_var)  
+#     def train(self, caps_var, frames_var, image_var, noise_var):
+#         return (self.train_D(image_var, caps_var, noise_var, frames_var), 
+#                 self.train_G(caps_var, noise_var, frames_var))
+#         
+#     def train_real(self, image_var, caps_var):
+#         return self.train_D_real(image_var, caps_var)
+#     
+#     def train_fake(self, noise_var, frames_var, caps_var):
+#         return (self.train_D_fake(caps_var, noise_var, frames_var),
+#                 self.train_G(caps_var, noise_var, frames_var))
+#     
+#     def predict(self, frames_var, caps_var, noise_var):
+#         return self.generate(noise_var, frames_var, caps_var)  
     
     def load_params(self, file_name):
         
