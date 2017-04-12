@@ -134,7 +134,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trains a DCGAN on COCO using Lasagne')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
     parser.add_argument('-n', '--num_epochs', type=int, default=1000, help='number of epochs (default: 1000)')
-    parser.add_argument('-u', '--unroll', type=int, default=None, help='unroll (num mini-batches) (default=None)')
+    parser.add_argument('-u', '--unroll', type=int, default=1, help='unroll (num mini-batches) (default=None)')
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--max_example_stream_iter', type=int, help='the total max number_of_batches_to_train *  batches_on_gpu (defailt: None, meaning train using all examples). If provided, it will be multiplied by delay_g_training')
     parser.add_argument('-s', '--batch_size', type=int, default=128, help='the number of examples per batch')
