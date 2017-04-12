@@ -1,16 +1,21 @@
 #!/bin/bash
-#PBS -l walltime=72:00:00
-#PBS -l nodes=1:ppn=3
-#PBS -r n
+# PBS -l walltime=144:00:00
+# PBS -l nodes=1:ppn=3 -l mem=12gb
+# PBS -j oe
+# PBS -q soumet
+# PBS -m bae
+# PBS -r n
+# PBS -V
+# --------------------------------------------------------------
 
 module add python/3.5.1
 module add openblas/0.2.18 
 module add CUDA/7.5
 
-source ~/p3.5/bin/activate
+cd /home2/ift6ed25/COCO-inpainting/src
+source /home2/ift6ed25/p3.5/bin/activate
 
 THEANO_FLAGS=’floatX=float32,device=gpu’
 
-cd $HOME/COCO-inpainting/src
 python train_GAN.py ../preprocessed/inpainting.h5 -u 1 -s 128 -g 10
 
