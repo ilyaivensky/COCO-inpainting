@@ -60,7 +60,7 @@ def main(data_file, params_file, w2v_file):
     
     batch_size=30
     
-    gan = GAN(batch_size, 1, 11188)     
+    gan = GAN(batch_size, 1, 11172)     
     gan.load_params(params_file)
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)

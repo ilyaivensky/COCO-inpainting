@@ -38,11 +38,10 @@ def show_samples(id, target, samples, captions, vocab_idx):
     nrows = math.ceil(nb_samples / ncol) * 2
     
     num_real = 0
-
+    
     for i in range(nb_samples):
             
-        indices = [idx for idx, e in enumerate(captions[i]) if e != 0]
-        if not indices:
+        if captions[i].nnz == 0:
             logging.warning('Empty captions for {}'.format(id[i]))
              
         plt.subplot(nrows, ncol, num_real + 1)
