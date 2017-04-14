@@ -24,7 +24,7 @@ import math
 
 
 from dataset import H5PYSparseDataset
-from fuel.schemes import ShuffledScheme
+from fuel.schemes import ShuffledScheme, SequentialScheme
 #from fuel.transformers import Transformer
 #from PIL import Image
 
@@ -32,7 +32,7 @@ from sparse_matrix_utils import sparse_floatX
 
 #from predict import predict
 
-def train(data_file, out_model, voc_size, num_epochs, batch_size, batches_on_gpu, max_example_stream_iter=None, 
+def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batches_on_gpu, max_example_stream_iter=None, 
          split='train2014', initial_eta=2e-4, unroll=1, params_file=None):
     
     logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ def train(data_file, out_model, voc_size, num_epochs, batch_size, batches_on_gpu
         sources=('train2014/frame', 'train2014/img', 'train2014/capt'), 
         load_in_memory=True)
     
-    data.example_iteration_scheme = ShuffledScheme(data.num_examples, batch_size * batches_on_gpu)
+    data.example_iteration_scheme = SequentialScheme(data.num_examples, batch_size * batches_on_gpu)
     
     gan = GAN(batch_size, batches_on_gpu, voc_size)
     if params_file:
@@ -123,7 +123,7 @@ def train(data_file, out_model, voc_size, num_epochs, batch_size, batches_on_gpu
         logging.info("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / processed_examples))
  
         # Be on a safe side - if the job is killed, it is better to preserve at least something
-        if epoch % 10 == 9 or epoch == num_epochs - 1:
+        if epoch + 1 % out_freq == 0 or epoch == num_epochs - 1:
             gan.save_params('{}.{}'.format(out_model, epoch + 1))
               
 #    predict(gan, data_fp, 'val2014', 10)
@@ -133,12 +133,13 @@ if __name__ == '__main__':
  
     parser = argparse.ArgumentParser(description='Trains a DCGAN on COCO using Lasagne')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
-    parser.add_argument('-n', '--num_epochs', type=int, default=1000, help='number of epochs (default: 1000)')
+    parser.add_argument('-n', '--num_epochs', type=int, default=10000, help='number of epochs (default: 10000)')
     parser.add_argument('-u', '--unroll', type=int, default=1, help='unroll (num mini-batches) (default=None)')
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--max_example_stream_iter', type=int, help='the total max number_of_batches_to_train *  batches_on_gpu (defailt: None, meaning train using all examples). If provided, it will be multiplied by delay_g_training')
     parser.add_argument('-s', '--batch_size', type=int, default=128, help='the number of examples per batch')
     parser.add_argument('-o', '--out_model', type=str, default='../models/GAN', help='otput model')
+    parser.add_argument('-f', '--output_freq', type=int, default=1, help='frequency of output (default: 1, which means each epoch)')
     parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
     parser.add_argument('-g', '--batches_on_gpu', type=int, default=10, help='number of mini-batches to load simultaneously on GPU')
     
@@ -146,6 +147,7 @@ if __name__ == '__main__':
     
     setup_logging(default_path=args.log_file)
  
-    train(args.data_file, out_model=args.out_model, voc_size=11172,  num_epochs=args.num_epochs, batch_size=args.batch_size,
-         params_file=args.params_dir, batches_on_gpu=args.batches_on_gpu, unroll=args.unroll, 
-         max_example_stream_iter=args.max_example_stream_iter)
+    train(args.data_file, out_model=args.out_model, out_freq=args.output_freq, 
+          voc_size=11172,  num_epochs=args.num_epochs, batch_size=args.batch_size,
+          params_file=args.params_dir, batches_on_gpu=args.batches_on_gpu, unroll=args.unroll, 
+          max_example_stream_iter=args.max_example_stream_iter)
