@@ -368,10 +368,10 @@ class GAN(object):
         Shared variables (storing on GPU)
         
         """
-        self.frames_var = theano.shared(np.zeros((batch_size * num_on_gpu, 3, 64, 64), dtype=theano.config.floatX))
-        self.img_var = theano.shared(np.zeros((batch_size * num_on_gpu, 3, 64, 64), dtype=theano.config.floatX))
-        self.noise_var = theano.shared(np.zeros((batch_size * num_on_gpu, 100), dtype=theano.config.floatX))
-        self.caps_var = theano.shared(csr_matrix((batch_size * num_on_gpu, voc_size), dtype=theano.config.floatX))
+        self.frames_var = theano.shared(np.zeros((batch_size * num_on_gpu, 3, 64, 64), dtype=theano.config.floatX), name='frames_var')
+        self.img_var = theano.shared(np.zeros((batch_size * num_on_gpu, 3, 64, 64), dtype=theano.config.floatX), name='img_var')
+        self.noise_var = theano.shared(np.zeros((batch_size * num_on_gpu, 100), dtype=theano.config.floatX), name='noise_var')
+        self.caps_var = theano.shared(csr_matrix((batch_size * num_on_gpu, voc_size), dtype=theano.config.floatX), name='caps_var')
         
         """ 
         Theano symbolic variables
