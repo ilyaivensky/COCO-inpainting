@@ -9,7 +9,6 @@ from theano import sparse as tsp
 import lasagne
 import numpy as np
 from scipy.sparse import csr_matrix
-import pygpy
 
 import logging
 
