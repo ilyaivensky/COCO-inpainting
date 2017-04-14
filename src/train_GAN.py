@@ -25,7 +25,9 @@ import math
 
 from dataset import H5PYSparseDataset
 from fuel.schemes import ShuffledScheme, SequentialScheme
-#from fuel.transformers import Transformer
+from fuel.transformers import Transformer
+from fuel.transformers.defaults import uint8_pixels_to_floatX
+import fuel
 #from PIL import Image
 
 from sparse_matrix_utils import sparse_floatX
@@ -39,6 +41,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
     
         
     theano.config.floatX = 'float32'
+    fuel.config.floatX = theano.config.floatX
 #     theano.config.exception_verbosity='high'
 #     theano.config.optimizer='fast_compile'
     
@@ -52,15 +55,17 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         sources=('train2014/frame', 'train2014/img', 'train2014/capt'), 
         load_in_memory=True)
     
-    data.example_iteration_scheme = SequentialScheme(data.num_examples, batch_size * batches_on_gpu)
-    
+    data.example_iteration_scheme = ShuffledScheme(data.num_examples, batch_size * batches_on_gpu)
+    data.default_transformers = uint8_pixels_to_floatX(('train2014/frame', 'train2014/img'))
+        
     gan = GAN(batch_size, batches_on_gpu, voc_size)
     if params_file:
         gan.load_params(params_file)
     
     logging.info('Starting training: num_epochs={}, max_example_stream_iter={}, batches_on_gpu={}, unroll={}, data_file={}'.format(num_epochs, max_example_stream_iter, batches_on_gpu, unroll, data_file))
    
-    data_stream = data.get_example_stream()
+    data_stream = data.apply_default_transformers(
+        data.get_example_stream())
     
     for epoch in range(num_epochs):
         # In each epoch, we do a full pass over the training data:
@@ -76,8 +81,8 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
             
             logging.debug('{}: Loading {} examples to GPU'.format(example_stream_iter+1, len(imgs)))
             
-            gan.frames_var.set_value((lasagne.utils.floatX(frames) / 255).transpose(0,3,1,2))
-            gan.img_var.set_value((lasagne.utils.floatX(imgs) / 255).transpose(0,3,1,2))
+            gan.frames_var.set_value(frames.transpose(0,3,1,2))
+            gan.img_var.set_value(imgs.transpose(0,3,1,2))
             gan.noise_var.set_value(lasagne.utils.floatX(np.random.randn(len(imgs),100)))
             gan.caps_var.set_value(sparse_floatX(caps))
             
@@ -123,7 +128,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         logging.info("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / processed_examples))
  
         # Be on a safe side - if the job is killed, it is better to preserve at least something
-        if epoch + 1 % out_freq == 0 or epoch == num_epochs - 1:
+        if (epoch+1) % out_freq == 0 or epoch == num_epochs - 1:
             gan.save_params('{}.{}'.format(out_model, epoch + 1))
               
 #    predict(gan, data_fp, 'val2014', 10)

@@ -17,6 +17,8 @@ import logging
 
 from dataset import H5PYSparseDataset
 from fuel.schemes import SequentialScheme
+from fuel.transformers.defaults import uint8_pixels_to_floatX
+import fuel
 
 from sparse_matrix_utils import sparse_floatX
 
@@ -33,14 +35,16 @@ def predict(model, data_file, split, w2v_model, batch_size):
         load_in_memory=True)
     
     data.example_iteration_scheme = SequentialScheme(data.num_examples, batch_size)
+    data.default_transformers = uint8_pixels_to_floatX(('val2014/frame',))
     
     predict_loss = 0
     
-    data_stream = data.get_example_stream()
+    data_stream = data.apply_default_transformers(
+        data.get_example_stream())
     
     for idxs, frames, imgs, caps in data_stream.get_epoch_iterator():
         
-        model.frames_var.set_value((lu.floatX(frames) / 255).transpose(0,3,1,2))
+        model.frames_var.set_value(frames.transpose(0,3,1,2))
         model.noise_var.set_value(lu.floatX(np.random.randn(len(imgs),100)))
         model.caps_var.set_value(sparse_floatX(caps))
     
@@ -71,6 +75,8 @@ def main(data_file, params_file, w2v_file):
 if __name__ == '__main__':
     
     theano.config.floatX = 'float32'
+    fuel.config.floatX = theano.config.floatX
+    
     theano.exception_verbosity='high'
     
     rnd.seed(87537)
