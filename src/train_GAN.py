@@ -55,10 +55,14 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         sources=('train2014/frame', 'train2014/img', 'train2014/capt'), 
         load_in_memory=True)
     
-    data.example_iteration_scheme = ShuffledScheme(data.num_examples, batch_size * batches_on_gpu)
+    num_examples_on_gpu = batch_size * batches_on_gpu
+    num_examples = data.num_examples // num_examples_on_gpu
+    num_examples *= num_examples_on_gpu
+    
+    data.example_iteration_scheme = ShuffledScheme(num_examples, num_examples_on_gpu)
     data.default_transformers = uint8_pixels_to_floatX(('train2014/frame', 'train2014/img'))
         
-    gan = GAN(batch_size, batches_on_gpu, voc_size)
+    gan = GAN(num_examples_on_gpu, voc_size)
     if params_file:
         gan.load_params(params_file)
     
@@ -68,65 +72,66 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         data.get_example_stream())
     
     for epoch in range(num_epochs):
+        
+        start_time = time.time()
         # In each epoch, we do a full pass over the training data:
         train_D_loss = 0
         train_G_loss = 0
-        processed_examples = 0
         
-        data_stream.reset()
-          
-        start_time = time.time()
-          
-        for example_stream_iter, (frames, imgs, caps) in enumerate(data_stream.get_epoch_iterator()):
+        processed_D = 0
+        processed_G = 0
+        
+        data_stream.next_epoch()
+        for it_num, (frames, imgs, caps) in enumerate(data_stream.get_epoch_iterator()):
             
-            logging.debug('{}: Loading {} examples to GPU'.format(example_stream_iter+1, len(imgs)))
+            logging.debug('{}: Loading {} examples to GPU'.format(it_num+1, len(imgs)))
             
             gan.frames_var.set_value(frames.transpose(0,3,1,2))
             gan.img_var.set_value(imgs.transpose(0,3,1,2))
             gan.noise_var.set_value(lasagne.utils.floatX(np.random.randn(len(imgs),100)))
             gan.caps_var.set_value(sparse_floatX(caps))
-            
+             
             len_imgs = len(imgs)
             actual_batches = int(math.ceil(len_imgs / batch_size))
-            
+             
             logging.debug('Done loading {} examples to GPU'.format(len_imgs))
             logging.debug('frames.shape={}, imgs.shape={}, caps.shape={}'.format(frames.shape, imgs.shape, caps.shape))
-            
+             
             fake_i = 0
-            
+             
             for i in range(actual_batches):
-                
+                 
                 first = i * batch_size
                 last = min(first + batch_size, len_imgs) 
-                
+                 
                 """
                 Train discriminator on real images right away, but delay training on fake ones
                 Accumulate all minibatches, and then train discriminator and generator on fake images
                 """ 
 #                 logging.debug('real, first={}, last={}'.format(first, last))
-                train_D_loss += gan.train_D_real(first, last)
-                  
+                train_D_loss += gan.train_D_real(first, last) * (last-first)
+                processed_D += last-first
+                   
                 if (i+1) % unroll == 0:
                     # train generator with accumulated batches
                     while fake_i <= i: 
                         fake_first = fake_i * batch_size
                         fake_last = min(fake_first + batch_size, len_imgs)
 #                         logging.debug('fake, first={}, last={}'.format(fake_first, fake_last))
-                        train_D_loss += gan.train_D_fake(fake_first, fake_last)
-                        train_G_loss += gan.train_G(fake_first, fake_last)
+                        train_D_loss += gan.train_D_fake(fake_first, fake_last) * (fake_last-fake_first)
+                        processed_D += fake_last-fake_first
+                        train_G_loss += gan.train_G(fake_first, fake_last) * (fake_last-fake_first)
+                        processed_G += fake_last-fake_first
                         fake_i+=1
-                        
-                processed_examples += (last - first)
-                    
-            if max_example_stream_iter and example_stream_iter+1 >= max_example_stream_iter:
+                         
+            if max_example_stream_iter and it_num+1 >= max_example_stream_iter:
                 break
-        
-  
-        # Then we print the results for this epoch:
+#         
+#       
         logging.info("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
-        logging.info("  training loss (D/G):\t\t{}".format(np.array([train_D_loss, train_G_loss]) / processed_examples))
- 
+        logging.info("  avg training loss (D/G):\t\t{}".format(np.array([train_D_loss / processed_D, train_G_loss / processed_G])))
+  
         # Be on a safe side - if the job is killed, it is better to preserve at least something
         if (epoch+1) % out_freq == 0 or epoch == num_epochs - 1:
             gan.save_params('{}.{}'.format(out_model, epoch + 1))

@@ -34,7 +34,7 @@ def predict(model, data_file, split, w2v_model, batch_size):
         sources=('val2014/id', 'val2014/frame', 'val2014/img', 'val2014/capt'), 
         load_in_memory=True)
     
-    data.example_iteration_scheme = SequentialScheme(data.num_examples, batch_size)
+    data.example_iteration_scheme = SequentialScheme(batch_size, batch_size) #we intend to do only 1 batch
     data.default_transformers = uint8_pixels_to_floatX(('val2014/frame',))
     
     predict_loss = 0

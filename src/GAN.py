@@ -9,6 +9,7 @@ from theano import sparse as tsp
 import lasagne
 import numpy as np
 from scipy.sparse import csr_matrix
+import pygpy
 
 import logging
 
@@ -360,7 +361,7 @@ class Generator(Model):
         
 class GAN(object):
     
-    def __init__(self, batch_size, num_on_gpu, voc_size):
+    def __init__(self, num_on_gpu, voc_size):
         
         self.logger = logging.getLogger(__name__)
         
@@ -368,10 +369,25 @@ class GAN(object):
         Shared variables (storing on GPU)
         
         """
-        self.frames_var = theano.shared(np.zeros((batch_size * num_on_gpu, 3, 64, 64), dtype=theano.config.floatX), name='frames_var')
-        self.img_var = theano.shared(np.zeros((batch_size * num_on_gpu, 3, 64, 64), dtype=theano.config.floatX), name='img_var')
-        self.noise_var = theano.shared(np.zeros((batch_size * num_on_gpu, 100), dtype=theano.config.floatX), name='noise_var')
-        self.caps_var = theano.shared(csr_matrix((batch_size * num_on_gpu, voc_size), dtype=theano.config.floatX), name='caps_var')
+        self.frames_var = theano.shared(
+            np.zeros((num_on_gpu, 3, 64, 64), dtype=theano.config.floatX), 
+            name='frames_var', 
+            borrow=True)
+        
+        self.img_var = theano.shared(
+            np.zeros((num_on_gpu, 3, 64, 64), dtype=theano.config.floatX), 
+            name='img_var', 
+            borrow=True)
+        
+        self.noise_var = theano.shared(
+            np.zeros((num_on_gpu, 100), dtype=theano.config.floatX), 
+            name='noise_var', 
+            borrow=True)
+        
+        self.caps_var = theano.shared(
+            csr_matrix((num_on_gpu, voc_size), dtype=theano.config.floatX), 
+            name='caps_var', 
+            borrow=True)
         
         """ 
         Theano symbolic variables
@@ -488,20 +504,6 @@ class GAN(object):
             }
         ) 
     
-#     
-#     def train(self, caps_var, frames_var, image_var, noise_var):
-#         return (self.train_D(image_var, caps_var, noise_var, frames_var), 
-#                 self.train_G(caps_var, noise_var, frames_var))
-#         
-#     def train_real(self, image_var, caps_var):
-#         return self.train_D_real(image_var, caps_var)
-#     
-#     def train_fake(self, noise_var, frames_var, caps_var):
-#         return (self.train_D_fake(caps_var, noise_var, frames_var),
-#                 self.train_G(caps_var, noise_var, frames_var))
-#     
-#     def predict(self, frames_var, caps_var, noise_var):
-#         return self.generate(noise_var, frames_var, caps_var)  
     
     def load_params(self, file_name):
         
