@@ -22,7 +22,9 @@ import fuel
 
 from sparse_matrix_utils import sparse_floatX
 
-def predict(model, data_file, split, w2v_model, batch_size):
+from os.path import basename
+
+def predict(model, data_file, split, w2v_model, batch_size, model_name, out_dir):
       
     vocab_idx = w2v_model.wv.index2word
     
@@ -50,27 +52,27 @@ def predict(model, data_file, split, w2v_model, batch_size):
     
      
         samples, loss = model.generate(0,batch_size)
-        show_samples(idxs, imgs, (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, vocab_idx)
+        show_samples(idxs, imgs, (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, loss.ravel(), vocab_idx, model_name, out_dir)
         predict_loss += loss
         
         break
 
     logging.info("  prediction loss:\t\t{}".format(predict_loss))
 
-def main(data_file, params_file, w2v_file):
+def main(data_file, params_file, w2v_file, out_dir):
     
     logger = logging.getLogger(__name__)
     logger.info('Loading data from {}...'.format(data_file))  
     
     batch_size=30
     
-    gan = GAN(batch_size, 1, 11172)     
+    gan = GAN(batch_size, 11172)     
     gan.load_params(params_file)
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
     
 #    with h5py.File(data_file,'r') as hf:
-    predict(gan, data_file, 'val2014', w2v_model, batch_size)
+    predict(gan, data_file, 'val2014', w2v_model, batch_size, basename(params_file), out_dir)
 
 if __name__ == '__main__':
     
@@ -86,9 +88,10 @@ if __name__ == '__main__':
     parser.add_argument('-m','--model', type=str, help='model name')
     parser.add_argument('-w', '--w2v_file', type=str, default='../models/word2vec.512.model', help='word2vec model file')
     parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
+    parser.add_argument('-o', '--out_dir', type=str, default='../results', help='output directory')
     
     args = parser.parse_args()
     
     setup_logging(default_path=args.log_file)
     
-    main(args.data_file, args.model, args.w2v_file)
+    main(args.data_file, args.model, args.w2v_file, args.out_dir)

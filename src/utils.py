@@ -27,7 +27,7 @@ def setup_logging(
     else:
         logging.basicConfig(level=default_level)
           
-def show_samples(id, target, samples, captions, vocab_idx):
+def show_samples(id, target, samples, captions, loss, vocab_idx, model_name, out_dir):
 
     import math
     import matplotlib.pyplot as plt
@@ -44,14 +44,21 @@ def show_samples(id, target, samples, captions, vocab_idx):
         if captions[i].nnz == 0:
             logging.warning('Empty captions for {}'.format(id[i]))
              
-        plt.subplot(nrows, ncol, num_real + 1)
+        ax = plt.subplot(nrows, ncol, num_real + 1)
+        ax.get_xaxis().set_visible(False) 
+        ax.get_yaxis().set_visible(False) 
         plt.imshow(target[i])
     
-        plt.subplot(nrows, ncol, num_real + ncol + 1)
+        ax = plt.subplot(nrows, ncol, num_real + ncol + 1)
+        ax.get_xaxis().set_visible(False) 
+        ax.get_yaxis().set_visible(False) 
+        ax.set_title('{:.3f}'.format(loss[i]))
         plt.imshow(samples[i])
         
         num_real += 1
         if num_real % ncol == 0:
             num_real += ncol
-            
-    plt.show()
+    
+    plt.suptitle(model_name)   
+    plt.savefig(os.path.join(out_dir, '.'.join([model_name, 'png'])))
+ #   plt.show()
