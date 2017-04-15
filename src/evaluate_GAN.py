@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import division
+
 import theano
 from lasagne import utils as lu
 
@@ -24,7 +26,7 @@ from sparse_matrix_utils import sparse_floatX
 
 from os.path import basename
 
-def predict(model, data_file, split, w2v_model, batch_size, model_name, out_dir):
+def evaluate(model, data_file, split, w2v_model, batch_size, model_name, out_dir):
       
     vocab_idx = w2v_model.wv.index2word
     
@@ -37,28 +39,26 @@ def predict(model, data_file, split, w2v_model, batch_size, model_name, out_dir)
         load_in_memory=True)
     
     data.example_iteration_scheme = SequentialScheme(batch_size, batch_size) #we intend to do only 1 batch
-    data.default_transformers = uint8_pixels_to_floatX(('val2014/frame',))
-    
-    predict_loss = 0
+    data.default_transformers = uint8_pixels_to_floatX(('val2014/frame', 'val2014/img'))
     
     data_stream = data.apply_default_transformers(
         data.get_example_stream())
     
     for idxs, frames, imgs, caps in data_stream.get_epoch_iterator():
         
+        model.img_var.set_value(imgs.transpose(0,3,1,2))
         model.frames_var.set_value(frames.transpose(0,3,1,2))
         model.noise_var.set_value(lu.floatX(np.random.randn(len(imgs),100)))
         model.caps_var.set_value(sparse_floatX(caps))
     
-     
-        samples, loss = model.generate(0,batch_size)
-        show_samples(idxs, imgs, (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, loss.ravel(), vocab_idx, model_name, out_dir)
-        predict_loss += loss
+        samples, loss, acc = model.evaluate_fake(0,batch_size)
+        show_samples(idxs, (imgs * 255).astype(np.uint8), (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, loss.ravel(), vocab_idx, model_name, out_dir)
+         
+        logging.info('prediction loss and acc:\t\t{}'.format(zip(loss, acc)))
+        logging.info('loss mean: {:.3f}, var: {:.3f}'.format(np.asscalar(np.mean(loss, axis=0)), np.asscalar(np.var(loss, axis=0))))
+        logging.info('avg acc: {:.3f}'.format(np.sum(acc) / batch_size))
         
         break
-
-    logging.info('prediction loss:\t\t{}'.format(predict_loss))
-    logging.info('loss mean: {:.3f}, var: {:.3f}'.format(np.asscalar(np.mean(predict_loss, axis=0)), np.asscalar(np.var(predict_loss, axis=0))))
 
 def main(data_file, params_file, w2v_file, out_dir):
     
@@ -73,7 +73,7 @@ def main(data_file, params_file, w2v_file, out_dir):
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
     
 #    with h5py.File(data_file,'r') as hf:
-    predict(gan, data_file, 'val2014', w2v_model, batch_size, basename(params_file), out_dir)
+    evaluate(gan, data_file, 'val2014', w2v_model, batch_size, basename(params_file), out_dir)
 
 if __name__ == '__main__':
     

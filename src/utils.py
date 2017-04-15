@@ -59,6 +59,6 @@ def show_samples(id, target, samples, captions, loss, vocab_idx, model_name, out
         if num_real % ncol == 0:
             num_real += ncol
     
-    plt.suptitle(model_name)   
-    plt.savefig(os.path.join(out_dir, '.'.join([model_name, 'png'])))
+    plt.suptitle('.'.join([model_name, 'burn-in5']))   
+    plt.savefig(os.path.join(out_dir, '.'.join([model_name, 'burn-in5', 'png'])))
  #   plt.show()

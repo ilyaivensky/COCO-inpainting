@@ -134,6 +134,7 @@ class Generator(Model):
         Model.__init__(self, "Generator")
     
         custom_rectify = lasagne.nonlinearities.rectify #LeakyRectify(0.1)
+        upscale_method = 'repeat'
     
         self.logger.info('-----------build_generator-------------')
         
@@ -176,15 +177,7 @@ class Generator(Model):
                 W=lasagne.init.HeNormal(gain='relu')))
               
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-#         
-#         layers.append(
-#             lasagne.layers.MaxPool2DLayer(
-#                  layers[-1],
-#                  name='MaxPoll2DLayer1',
-#                  pool_size=2))
-#         
-#         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-#         
+         
         layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.Conv2DLayer(
@@ -195,14 +188,6 @@ class Generator(Model):
                     W=lasagne.init.HeNormal(gain='relu'))))
           
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-#         layers.append(
-#             lasagne.layers.MaxPool2DLayer(
-#                  layers[-1],
-#                  name='MaxPoll2DLayer2',
-#                  pool_size=2))
-#         
-#         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
          
         layers.append(
             lasagne.layers.batch_norm(
@@ -264,7 +249,7 @@ class Generator(Model):
                 layers[-1],
                 name='Upscale2DLayer4',
                 scale_factor=2,
-                mode='repeat'))
+                mode=upscale_method))
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
@@ -284,7 +269,7 @@ class Generator(Model):
                 layers[-1],
                 name='Upscale2DLayer3',
                 scale_factor=2,
-                mode='repeat'))
+                mode=upscale_method))
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
@@ -304,7 +289,7 @@ class Generator(Model):
                 layers[-1],
                 name='Upscale2DLayer2',
                 scale_factor=2,
-                mode='repeat'))
+                mode=upscale_method))
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
@@ -324,7 +309,7 @@ class Generator(Model):
 #                 layers[-1],
 #                 name='Upscale2DLayer1',
 #                 scale_factor=2,
-#                 mode='repeat'))
+#                 mode=upscale_method))
 #       
 #        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
@@ -456,6 +441,7 @@ class GAN(object):
         updates_D_real = lasagne.updates.adam(loss_D_real, params_D, learning_rate=0.0002, beta1=0.5)
         updates_D_fake = lasagne.updates.adam(loss_D_fake, params_D, learning_rate=0.0002, beta1=0.5)
         
+        accuracy = lasagne.objectives.binary_accuracy(probs_real, 1.0, 0.5) + lasagne.objectives.binary_accuracy(probs_fake, 0.0, 0.5)
         
         """
         Theano functions
@@ -482,6 +468,18 @@ class GAN(object):
             }
         )
         
+        self.train_D = theano.function(
+            inputs=[first_idx,last_idx],
+            outputs=loss_D,
+            updates=updates_D,
+            givens={
+                images : self.img_var[first_idx:last_idx],
+                caps : self.caps_var[first_idx:last_idx],
+                noise : self.noise_var[first_idx:last_idx],
+                frames : self.frames_var[first_idx:last_idx]
+            }
+        )
+        
         self.train_G = theano.function(
             inputs=[first_idx,last_idx],
             outputs=loss_G,
@@ -493,16 +491,17 @@ class GAN(object):
             }
         )
 
-        self.generate = theano.function(
+        self.evaluate = theano.function(
             inputs=[first_idx,last_idx],
-            outputs=[img_fake, probs_fake],
+            outputs=[img_fake, probs_fake, accuracy],
             givens={
+                images : self.img_var[first_idx:last_idx],
                 noise : self.noise_var[first_idx:last_idx],
                 frames : self.frames_var[first_idx:last_idx],
                 caps : self.caps_var[first_idx:last_idx]
             }
         ) 
-    
+        
     
     def load_params(self, file_name):
         
