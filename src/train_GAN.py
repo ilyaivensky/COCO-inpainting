@@ -77,13 +77,16 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         
         start_time = time.time()
         # In each epoch, we do a full pass over the training data:
-        train_D_loss = 0
+        train_D_real_loss = 0
+        train_D_fake_loss = 0
         train_G_loss = 0
         
-        last_train_D_loss = None
+        last_train_D_real_loss = None
+        last_train_D_fake_loss = None
         last_train_G_loss = None
         
-        processed_D = 0
+        processed_D_real = 0
+        processed_D_fake = 0
         processed_G = 0
         
         data_stream.next_epoch()
@@ -106,11 +109,16 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
                 Train discriminator right away, but delay training of generator
                 """ 
 #                 logging.debug('real, first={}, last={}'.format(first, last))
-                last_train_D_loss = gan.train_D(first, last) * (last-first)
-                train_D_loss += last_train_D_loss
-                last_train_D_loss /= (last-first) * 2
-                processed_D += (last-first) * 2
-                                   
+                last_train_D_real_loss = gan.train_D_real(first, last) * (last-first)
+                train_D_real_loss += last_train_D_real_loss
+                last_train_D_real_loss /= (last-first)
+                processed_D_real += last-first
+                
+                last_train_D_fake_loss = gan.train_D_fake(first, last) * (last-first)
+                train_D_fake_loss += last_train_D_fake_loss
+                last_train_D_fake_loss /= (last-first)
+                processed_D_fake += last-first
+                   
                 if epoch >= delay_g and (i+1) % unroll == 0:
                     # train generator with accumulated batches
                     while gen_i <= i: 
@@ -127,10 +135,15 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
             if max_example_stream_iter and it_num+1 >= max_example_stream_iter:
                 break
 #       
-        if processed_D:
-            train_D_loss /= processed_D 
+        if processed_D_real:
+            train_D_real_loss /= processed_D_real 
         else:
-            train_D_loss = None
+            train_D_real_loss = None
+            
+        if processed_D_fake:
+            train_D_fake_loss /= processed_D_fake 
+        else:
+            train_D_fake_loss = None
             
         if processed_G:
             train_G_loss /= processed_G
@@ -140,10 +153,10 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
 #       
         logging.info("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
-        logging.info("  epoch avg training loss (D/G):\t\t{}".format(
-            np.array([train_D_loss, train_G_loss])))
-        logging.info("  last batch training loss (D//G):\t\t{}".format(
-            np.array([last_train_D_loss, last_train_G_loss])))
+        logging.info("  epoch avg training loss (DR/DF/G):\t\t{}".format(
+            np.array([train_D_real_loss, train_D_fake_loss, train_G_loss])))
+        logging.info("  last batch training loss (DR/DF/G):\t\t{}".format(
+            np.array([last_train_D_real_loss, last_train_D_fake_loss, last_train_G_loss])))
   
         # Be on a safe side - if the job is killed, it is better to preserve at least something
         if (epoch+1) % out_freq == 0 or epoch == num_epochs - 1:
