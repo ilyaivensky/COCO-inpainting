@@ -37,10 +37,12 @@ class Discriminator(Model):
         caps_nn = lasagne.layers.batch_norm(
                 DenseLayerSparseInput(
                     self.in_caps, 
-                    name='DenseLayer_caps', 
+                    name='Embedding_caps', 
                     num_units=512,
-                    nonlinearity=custom_rectify,
+                    nonlinearity=lasagne.nonlinearities.identity,
                     W=lasagne.init.GlorotUniform('relu')))
+        
+        self.logger.debug('{}, {}'.format(caps_nn.name, caps_nn.output_shape))
         
         self.in_img = lasagne.layers.InputLayer(
                 shape=(None, 3, 64, 64),
@@ -138,6 +140,10 @@ class Generator(Model):
     
         self.logger.info('-----------build_generator-------------')
         
+        """
+        Inputs: noise, frame and captions
+        """
+        
         self.in_noise = lasagne.layers.InputLayer(
                 shape=(None, 100), 
                 name='InputLayer_Noise', 
@@ -156,9 +162,9 @@ class Generator(Model):
         caps_nn = lasagne.layers.batch_norm(
                 DenseLayerSparseInput(
                     self.in_caps, 
-                    name='DenseLayer_caps', 
+                    name='Embedding_caps', 
                     num_units=512,
-                    nonlinearity=custom_rectify,
+                    nonlinearity=lasagne.nonlinearities.identity,
                     W=lasagne.init.GlorotUniform('relu')))
         
         self.logger.debug('{}, {}'.format(caps_nn.name, caps_nn.output_shape))
@@ -292,27 +298,7 @@ class Generator(Model):
                 mode=upscale_method))
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-#         layers.append(
-#             lasagne.layers.batch_norm(
-#                 lasagne.layers.Conv2DLayer(
-#                     layers[-1], 
-#                     name='Conv2DLayer2', 
-#                     nonlinearity=custom_rectify,
-#                     num_filters=64, filter_size=5, stride=1, pad=2,
-#                     W=lasagne.init.HeNormal(gain='relu'))))
-#          
-#         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-#         
-#         layers.append(
-#             lasagne.layers.Upscale2DLayer(
-#                 layers[-1],
-#                 name='Upscale2DLayer1',
-#                 scale_factor=2,
-#                 mode=upscale_method))
-#       
-#        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
+           
         layers.append(
             lasagne.layers.Conv2DLayer(
                 layers[-1], 
@@ -322,6 +308,10 @@ class Generator(Model):
                 W=lasagne.init.HeNormal(gain=1.0)))
          
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+        
+        """
+        Combine generated image with the frame
+        """
         
         layers.append(
             lasagne.layers.PadLayer(
@@ -341,7 +331,6 @@ class Generator(Model):
         
         self.nn = layers[-1]
         
-#         print ('params', len(lasagne.layers.get_all_param_values(self.nn)))
         
 class GAN(object):
     
@@ -427,7 +416,7 @@ class GAN(object):
         loss_G = lasagne.objectives.binary_crossentropy(probs_fake, 0.9).mean()               
         loss_D_real = lasagne.objectives.binary_crossentropy(probs_real, 0.9).mean()
         loss_D_fake = lasagne.objectives.binary_crossentropy(probs_fake, 0.0).mean()
-        loss_D = loss_D_real + loss_D_fake
+     #   loss_D = loss_D_real + loss_D_fake
                 
         # Create update expressions for training
         params_G = lasagne.layers.get_all_params(self.generator.nn, trainable=True)
@@ -435,7 +424,7 @@ class GAN(object):
          
         #   eta = theano.shared(lasagne.utils.floatX(initial_eta))
         updates_G = lasagne.updates.adam(loss_G, params_G, learning_rate=0.0002, beta1=0.5)
-        updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0.0002, beta1=0.5)
+    #    updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0.0002, beta1=0.5)
         updates_D_real = lasagne.updates.adam(loss_D_real, params_D, learning_rate=0.0002, beta1=0.5)
         updates_D_fake = lasagne.updates.adam(loss_D_fake, params_D, learning_rate=0.0002, beta1=0.5)
         
