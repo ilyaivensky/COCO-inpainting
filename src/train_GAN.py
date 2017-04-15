@@ -95,7 +95,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
             
             logging.debug('{}: Loaded {} examples to GPU'.format(it_num+1, len(imgs)))
            
-            fake_i = 0  
+            gen_i = 0  
             for i in range(batches_on_gpu):
                  
                 first = i * batch_size
@@ -108,18 +108,19 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
 #                 logging.debug('real, first={}, last={}'.format(first, last))
                 train_D_real_loss += gan.train_D_real(first, last) * (last-first)
                 processed_D_real += last-first
+                train_D_fake_loss += gan.train_D_fake(first, last) * (last-first)
+                processed_D_fake += last-first
                    
                 if (i+1) % unroll == 0:
                     # train generator with accumulated batches
-                    while fake_i <= i: 
-                        fake_first = fake_i * batch_size
-                        fake_last = fake_first + batch_size
-#                         logging.debug('fake, first={}, last={}'.format(fake_first, fake_last))
-                        train_D_fake_loss += gan.train_D_fake(fake_first, fake_last) * (fake_last-fake_first)
-                        processed_D_fake += fake_last-fake_first
-                        train_G_loss += gan.train_G(fake_first, fake_last) * (fake_last-fake_first)
-                        processed_G += fake_last-fake_first
-                        fake_i+=1
+                    while gen_i <= i: 
+                        gen_first = gen_i * batch_size
+                        gen_last = gen_first + batch_size
+#                         logging.debug('fake, first={}, last={}'.format(gen_first, gen_last))
+                        
+                        train_G_loss += gan.train_G(gen_first, gen_last) * (gen_last-gen_first)
+                        processed_G += gen_last-gen_first
+                        gen_i+=1
                          
             if max_example_stream_iter and it_num+1 >= max_example_stream_iter:
                 break
@@ -142,7 +143,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trains a DCGAN on COCO using Lasagne')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
     parser.add_argument('-n', '--num_epochs', type=int, default=10000, help='number of epochs (default: 10000)')
-    parser.add_argument('-u', '--unroll', type=int, default=1, help='unroll (num mini-batches) (default=None)')
+    parser.add_argument('-u', '--unroll', type=int, default=5, help='unroll (num mini-batches) (default=None)')
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--max_example_stream_iter', type=int, help='the total max number_of_batches_to_train *  batches_on_gpu (defailt: None, meaning train using all examples). If provided, it will be multiplied by delay_g_training')
     parser.add_argument('-s', '--batch_size', type=int, default=128, help='the number of examples per batch')
