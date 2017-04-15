@@ -102,8 +102,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
                 last = first + batch_size
                  
                 """
-                Train discriminator on real images right away, but delay training on fake ones
-                Accumulate all minibatches, and then train discriminator and generator on fake images
+                Train discriminator right away, but delay training of generator
                 """ 
 #                 logging.debug('real, first={}, last={}'.format(first, last))
                 train_D_real_loss += gan.train_D_real(first, last) * (last-first)
@@ -143,7 +142,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trains a DCGAN on COCO using Lasagne')
     parser.add_argument('data_file', help='h5 file with prepocessed dataset')
     parser.add_argument('-n', '--num_epochs', type=int, default=10000, help='number of epochs (default: 10000)')
-    parser.add_argument('-u', '--unroll', type=int, default=5, help='unroll (num mini-batches) (default=None)')
+#     parser.add_argument('-u', '--unroll', type=int, default=5, help='unroll (num mini-batches) (default=None)')
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--max_example_stream_iter', type=int, help='the total max number_of_batches_to_train *  batches_on_gpu (defailt: None, meaning train using all examples). If provided, it will be multiplied by delay_g_training')
     parser.add_argument('-s', '--batch_size', type=int, default=128, help='the number of examples per batch')
@@ -158,5 +157,5 @@ if __name__ == '__main__':
  
     train(args.data_file, out_model=args.out_model, out_freq=args.output_freq, 
           voc_size=11172,  num_epochs=args.num_epochs, batch_size=args.batch_size,
-          params_file=args.params_dir, batches_on_gpu=args.batches_on_gpu, unroll=args.unroll, 
+          params_file=args.params_dir, batches_on_gpu=args.batches_on_gpu, unroll=args.batches_on_gpu, 
           max_example_stream_iter=args.max_example_stream_iter)
