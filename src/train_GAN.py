@@ -55,6 +55,8 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         sources=('train2014/frame', 'train2014/img', 'train2014/capt'), 
         load_in_memory=True)
     
+    # num_examples_on_gpu has to be fixed, 
+    # therefore the number of examples we use for training should divide by num_examples_on_gpu
     num_examples_on_gpu = batch_size * batches_on_gpu
     num_examples = data.num_examples // num_examples_on_gpu
     num_examples *= num_examples_on_gpu
@@ -75,51 +77,46 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         
         start_time = time.time()
         # In each epoch, we do a full pass over the training data:
-        train_D_loss = 0
+        train_D_real_loss = 0
+        train_D_fake_loss = 0
         train_G_loss = 0
         
-        processed_D = 0
+        processed_D_real = 0
+        processed_D_fake = 0
         processed_G = 0
         
         data_stream.next_epoch()
         for it_num, (frames, imgs, caps) in enumerate(data_stream.get_epoch_iterator()):
             
-            logging.debug('{}: Loading {} examples to GPU'.format(it_num+1, len(imgs)))
-            
             gan.frames_var.set_value(frames.transpose(0,3,1,2))
             gan.img_var.set_value(imgs.transpose(0,3,1,2))
             gan.noise_var.set_value(lasagne.utils.floatX(np.random.randn(len(imgs),100)))
             gan.caps_var.set_value(sparse_floatX(caps))
-             
-            len_imgs = len(imgs)
-            actual_batches = int(math.ceil(len_imgs / batch_size))
-             
-            logging.debug('Done loading {} examples to GPU'.format(len_imgs))
-            logging.debug('frames.shape={}, imgs.shape={}, caps.shape={}'.format(frames.shape, imgs.shape, caps.shape))
-             
-            fake_i = 0
-             
-            for i in range(actual_batches):
+            
+            logging.debug('{}: Loaded {} examples to GPU'.format(it_num+1, len(imgs)))
+           
+            fake_i = 0  
+            for i in range(batches_on_gpu):
                  
                 first = i * batch_size
-                last = min(first + batch_size, len_imgs) 
+                last = first + batch_size
                  
                 """
                 Train discriminator on real images right away, but delay training on fake ones
                 Accumulate all minibatches, and then train discriminator and generator on fake images
                 """ 
 #                 logging.debug('real, first={}, last={}'.format(first, last))
-                train_D_loss += gan.train_D_real(first, last) * (last-first)
-                processed_D += last-first
+                train_D_real_loss += gan.train_D_real(first, last) * (last-first)
+                processed_D_real += last-first
                    
                 if (i+1) % unroll == 0:
                     # train generator with accumulated batches
                     while fake_i <= i: 
                         fake_first = fake_i * batch_size
-                        fake_last = min(fake_first + batch_size, len_imgs)
+                        fake_last = fake_first + batch_size
 #                         logging.debug('fake, first={}, last={}'.format(fake_first, fake_last))
-                        train_D_loss += gan.train_D_fake(fake_first, fake_last) * (fake_last-fake_first)
-                        processed_D += fake_last-fake_first
+                        train_D_fake_loss += gan.train_D_fake(fake_first, fake_last) * (fake_last-fake_first)
+                        processed_D_fake += fake_last-fake_first
                         train_G_loss += gan.train_G(fake_first, fake_last) * (fake_last-fake_first)
                         processed_G += fake_last-fake_first
                         fake_i+=1
@@ -130,11 +127,12 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
 #       
         logging.info("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
-        logging.info("  avg training loss (D/G):\t\t{}".format(np.array([train_D_loss / processed_D, train_G_loss / processed_G])))
+        logging.info("  avg training loss (DR/DF/G):\t\t{}".format(
+            np.array([train_D_real_loss / processed_D_real, train_D_fake_loss / processed_D_fake, train_G_loss / processed_G])))
   
         # Be on a safe side - if the job is killed, it is better to preserve at least something
         if (epoch+1) % out_freq == 0 or epoch == num_epochs - 1:
-            gan.save_params('{}.{}'.format(out_model, epoch + 1))
+            gan.save_params('{}.{:03d}'.format(out_model, epoch + 1))
               
 #    predict(gan, data_fp, 'val2014', 10)
         
