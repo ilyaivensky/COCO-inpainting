@@ -153,9 +153,9 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
 #       
         logging.info("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
-        logging.info("  avg training loss (DR/DF/G):\t\t{}".format(
+        logging.info("  epoch avg training loss (DR/DF/G):\t\t{}".format(
             np.array([train_D_real_loss, train_D_fake_loss, train_G_loss])))
-        logging.info("  last training loss (DR/DF/G):\t\t{}".format(
+        logging.info("  last batch training loss (DR/DF/G):\t\t{}".format(
             np.array([last_train_D_real_loss, last_train_D_fake_loss, last_train_G_loss])))
   
         # Be on a safe side - if the job is killed, it is better to preserve at least something
