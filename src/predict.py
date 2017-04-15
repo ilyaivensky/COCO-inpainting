@@ -57,7 +57,8 @@ def predict(model, data_file, split, w2v_model, batch_size, model_name, out_dir)
         
         break
 
-    logging.info("  prediction loss:\t\t{}".format(predict_loss))
+    logging.info('prediction loss:\t\t{}'.format(predict_loss))
+    logging.info('loss mean: {:.3f}, var: {:.3f}'.format(np.asscalar(np.mean(predict_loss, axis=0)), np.asscalar(np.var(predict_loss, axis=0))))
 
 def main(data_file, params_file, w2v_file, out_dir):
     
