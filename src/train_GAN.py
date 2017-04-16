@@ -17,7 +17,7 @@ import time
 import logging
 
 from dataset import H5PYSparseDataset
-from fuel.schemes import ShuffledScheme, SequentialScheme
+from fuel.schemes import SequentialScheme
 #from fuel.transformers import Transformer
 from fuel.transformers.defaults import uint8_pixels_to_floatX
 import fuel
@@ -27,8 +27,9 @@ from sparse_matrix_utils import sparse_floatX
 
 #from evaluate_GAN import evaluate_GAN
 
-def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batches_on_gpu, delay_g, max_example_stream_iter=None, 
-         split='train2014', initial_eta=2e-4, unroll=1, params_file=None):
+def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batches_on_gpu, delay_g, lrg, lrd,
+          max_example_stream_iter=None, 
+          split='train2014', initial_eta=2e-4, unroll=1, params_file=None):
     
     logger = logging.getLogger(__name__)
     
@@ -54,14 +55,12 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
     num_examples = data.num_examples // num_examples_on_gpu
     num_examples *= num_examples_on_gpu
     
-    data.example_iteration_scheme = ShuffledScheme(num_examples, num_examples_on_gpu)
+    data.example_iteration_scheme = SequentialScheme(num_examples, num_examples_on_gpu)
     data.default_transformers = uint8_pixels_to_floatX(('train2014/frame', 'train2014/img'))
         
-    gan = GAN(num_examples_on_gpu, voc_size)
+    gan = GAN(num_examples_on_gpu, voc_size, lrg=lrg, lrd=lrd)
     if params_file:
         gan.load_params(params_file)
-    
-    logging.info('Starting training: num_epochs={}, max_example_stream_iter={}, batches_on_gpu={}, unroll={}, data_file={}'.format(num_epochs, max_example_stream_iter, batches_on_gpu, unroll, data_file))
    
     data_stream = data.apply_default_transformers(
         data.get_example_stream())
@@ -127,21 +126,10 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
                          
             if max_example_stream_iter and it_num+1 >= max_example_stream_iter:
                 break
-#       
-        if processed_D_real:
-            train_D_real_loss /= processed_D_real 
-        else:
-            train_D_real_loss = None
-            
-        if processed_D_fake:
-            train_D_fake_loss /= processed_D_fake 
-        else:
-            train_D_fake_loss = None
-            
-        if processed_G:
-            train_G_loss /= processed_G
-        else:
-            train_G_loss = None
+#        
+        train_D_real_loss /= processed_D_real if processed_D_real else None
+        train_D_fake_loss /= processed_D_fake if processed_D_fake else None   
+        train_G_loss /= processed_G if processed_G else None
         
 #       
         logging.info("Epoch {} of {} took {:.3f}s".format(
@@ -172,13 +160,17 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
     parser.add_argument('-g', '--batches_on_gpu', type=int, default=10, help='number of mini-batches to load simultaneously on GPU')
     parser.add_argument('-d', '--delay_g', type=int, default=5, help='number of epoch to delay training generator')
+    parser.add_argument('--lrd', type=float, default=0.0002, help='learning rate of discriminator')
+    parser.add_argument('--lrg', type=float, default=0.0002, help='learning rate of generator')
     
     args = parser.parse_args()
     
     setup_logging(default_path=args.log_file)
+    
+    logging.info(args)
  
     train(args.data_file, out_model=args.out_model, out_freq=args.output_freq, 
-          voc_size=11172,  num_epochs=args.num_epochs, batch_size=args.batch_size,
+          voc_size=11172,  num_epochs=args.num_epochs, batch_size=args.batch_size, lrg=args.lrg, lrd=args.lrd,
           params_file=args.params_dir, batches_on_gpu=args.batches_on_gpu, delay_g=args.delay_g, 
           unroll=args.batches_on_gpu, 
           max_example_stream_iter=args.max_example_stream_iter)

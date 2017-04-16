@@ -33,9 +33,9 @@ def setup_logging(
         
 def generate_z(shape):
     
-    return np.asarray(np.random.randint(0, 256, shape) / 255, dtype=config.floatX)
+    return np.asarray(np.random.uniform(size=shape), dtype=config.floatX)
           
-def show_samples(id, target, samples, captions, loss, vocab_idx, model_name, out_dir):
+def show_samples(ids, target, samples, captions, loss, vocab_idx, model_name, out_dir):
 
     import math
     import matplotlib.pyplot as plt
@@ -50,7 +50,7 @@ def show_samples(id, target, samples, captions, loss, vocab_idx, model_name, out
     for i in range(nb_samples):
             
         if captions[i].nnz == 0:
-            logging.warning('Empty captions for {}'.format(id[i]))
+            logging.warning('Empty captions for {}'.format(ids[i]))
              
         ax = plt.subplot(nrows, ncol, num_real + 1)
         ax.get_xaxis().set_visible(False) 
@@ -67,6 +67,6 @@ def show_samples(id, target, samples, captions, loss, vocab_idx, model_name, out
         if num_real % ncol == 0:
             num_real += ncol
     
-    plt.suptitle('.'.join([model_name, 'burn-in5']))   
-    plt.savefig(os.path.join(out_dir, '.'.join([model_name, 'burn-in5', 'png'])))
+    plt.suptitle(model_name)   
+    plt.savefig(os.path.join(out_dir, '.'.join([model_name,'png'])))
  #   plt.show()

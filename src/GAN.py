@@ -40,7 +40,7 @@ class Discriminator(Model):
                     name='Embedding_caps', 
                     num_units=512,
                     nonlinearity=lasagne.nonlinearities.identity,
-                    W=lasagne.init.GlorotUniform('relu')))
+                    W=lasagne.init.Normal()))
         
         self.logger.debug('{}, {}'.format(caps_nn.name, caps_nn.output_shape))
         
@@ -167,7 +167,7 @@ class Generator(Model):
                     name='Embedding_caps', 
                     num_units=512,
                     nonlinearity=lasagne.nonlinearities.identity,
-                    W=lasagne.init.GlorotUniform('relu')))
+                    W=lasagne.init.Normal()))
         
         self.logger.debug('{}, {}'.format(caps_nn.name, caps_nn.output_shape))
         
@@ -336,7 +336,7 @@ class Generator(Model):
         
 class GAN(object):
     
-    def __init__(self, num_on_gpu, voc_size):
+    def __init__(self, num_on_gpu, voc_size, lrg=0.0002, lrd=0.0002):
         
         self.logger = logging.getLogger(__name__)
         
@@ -425,10 +425,10 @@ class GAN(object):
         params_D = lasagne.layers.get_all_params(self.discriminator.nn, trainable=True)
          
         #   eta = theano.shared(lasagne.utils.floatX(initial_eta))
-        updates_G = lasagne.updates.adam(loss_G, params_G, learning_rate=0.0002, beta1=0.5)
+        updates_G = lasagne.updates.adam(loss_G, params_G, learning_rate=lrg, beta1=0.5)
     #    updates_D = lasagne.updates.adam(loss_D, params_D, learning_rate=0.0002, beta1=0.5)
-        updates_D_real = lasagne.updates.adam(loss_D_real, params_D, learning_rate=0.0002, beta1=0.5)
-        updates_D_fake = lasagne.updates.adam(loss_D_fake, params_D, learning_rate=0.0002, beta1=0.5)
+        updates_D_real = lasagne.updates.adam(loss_D_real, params_D, learning_rate=lrd, beta1=0.5)
+        updates_D_fake = lasagne.updates.adam(loss_D_fake, params_D, learning_rate=lrd, beta1=0.5)
         
         accuracy_real = lasagne.objectives.binary_accuracy(probs_real, 1.0, 0.5)
         accuracy_fake = lasagne.objectives.binary_accuracy(probs_fake, 0.0, 0.5)
