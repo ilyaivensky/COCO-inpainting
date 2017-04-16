@@ -4,6 +4,10 @@
 from __future__ import division
 
 import os
+
+import numpy as np
+from theano import config
+
 import logging.config
 import yaml
 
@@ -26,6 +30,10 @@ def setup_logging(
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
+        
+def generate_z(shape):
+    
+    return np.asarray(np.random.randint(0, 256, shape) / 255, dtype=config.floatX)
           
 def show_samples(id, target, samples, captions, loss, vocab_idx, model_name, out_dir):
 
