@@ -126,10 +126,21 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
                          
             if max_example_stream_iter and it_num+1 >= max_example_stream_iter:
                 break
-#        
-        train_D_real_loss /= processed_D_real if processed_D_real else None
-        train_D_fake_loss /= processed_D_fake if processed_D_fake else None   
-        train_G_loss /= processed_G if processed_G else None
+#       
+        if processed_D_real:
+            train_D_real_loss /= processed_D_real 
+        else:
+            train_D_real_loss = None
+            
+        if processed_D_fake:
+            train_D_fake_loss /= processed_D_fake 
+        else:
+            train_D_fake_loss = None
+            
+        if processed_G:
+            train_G_loss /= processed_G
+        else:
+            train_G_loss = None
         
 #       
         logging.info("Epoch {} of {} took {:.3f}s".format(
