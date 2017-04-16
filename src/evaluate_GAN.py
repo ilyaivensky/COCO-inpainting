@@ -4,7 +4,6 @@
 from __future__ import division
 
 import theano
-from lasagne import utils as lu
 
 import gensim
 
@@ -12,7 +11,7 @@ import numpy as np
 from numpy import random as rnd 
 
 from GAN import GAN
-from utils import setup_logging, show_samples
+from utils import setup_logging, show_samples, generate_z
 
 import argparse
 import logging
@@ -48,7 +47,7 @@ def evaluate(model, data_file, split, w2v_model, batch_size, model_name, out_dir
         
         model.img_var.set_value(imgs.transpose(0,3,1,2))
         model.frames_var.set_value(frames.transpose(0,3,1,2))
-        model.noise_var.set_value(lu.floatX(np.random.randn(len(imgs),100)))
+        model.noise_var.set_value(generate_z((len(imgs),model.generator.noise_shape)))
         model.caps_var.set_value(sparse_floatX(caps))
     
         samples, loss, acc = model.evaluate_fake(0,batch_size)

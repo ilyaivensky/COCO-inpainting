@@ -134,6 +134,8 @@ class Generator(Model):
     def __init__(self, voc_size, noise_var=None, frames_var=None, caps_var=None):
         
         Model.__init__(self, "Generator")
+        
+        self.noise_shape = 100
     
         custom_rectify = lasagne.nonlinearities.rectify #LeakyRectify(0.1)
         upscale_method = 'repeat'
@@ -145,7 +147,7 @@ class Generator(Model):
         """
         
         self.in_noise = lasagne.layers.InputLayer(
-                shape=(None, 100), 
+                shape=(None, self.noise_shape), 
                 name='InputLayer_Noise', 
                 input_var=noise_var)
                 

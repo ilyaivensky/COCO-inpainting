@@ -3,29 +3,22 @@
 
 from __future__ import division
 
-import sys
 
 import theano
-
-import lasagne
 
 import numpy as np
 
 from GAN import GAN
-from utils import setup_logging
-
-import h5py
+from utils import setup_logging, generate_z
 
 import argparse
 import time
 
 import logging
-import math
-
 
 from dataset import H5PYSparseDataset
 from fuel.schemes import ShuffledScheme, SequentialScheme
-from fuel.transformers import Transformer
+#from fuel.transformers import Transformer
 from fuel.transformers.defaults import uint8_pixels_to_floatX
 import fuel
 #from PIL import Image
@@ -94,7 +87,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
             
             gan.frames_var.set_value(frames.transpose(0,3,1,2))
             gan.img_var.set_value(imgs.transpose(0,3,1,2))
-            gan.noise_var.set_value(lasagne.utils.floatX(np.random.randn(len(imgs),100)))
+            gan.noise_var.set_value(generate_z((len(imgs),gan.generator.noise_shape)))
             gan.caps_var.set_value(sparse_floatX(caps))
             
             logging.debug('{}: Loaded {} examples to GPU'.format(it_num+1, len(imgs)))
