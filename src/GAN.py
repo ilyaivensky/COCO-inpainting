@@ -114,13 +114,12 @@ class Discriminator(Model):
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
         layers.append(
-            lasagne.layers.batch_norm(
-                lasagne.layers.DenseLayer(
-                    layers[-1],
-                    name='DenseLayer', 
-                    num_units=1,
-                    nonlinearity=lasagne.nonlinearities.sigmoid,
-                    W=lasagne.init.HeNormal(gain=1.0))))
+            lasagne.layers.DenseLayer(
+                layers[-1],
+                name='DenseLayer', 
+                num_units=1,
+                nonlinearity=lasagne.nonlinearities.sigmoid,
+                W=lasagne.init.HeNormal(gain=1.0)))
         
     
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
