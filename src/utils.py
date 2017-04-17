@@ -35,10 +35,12 @@ def generate_z(shape):
     
     return np.asarray(np.random.uniform(size=shape), dtype=config.floatX)
           
-def show_samples(ids, target, samples, captions, loss, vocab_idx, model_name, out_dir):
+def show_samples(ids, target, samples, captions, loss, vocab_idx, model_name, batch_id, out_dir):
 
     import math
     import matplotlib.pyplot as plt
+    
+    file_name = '-'.join([model_name, '{:03d}'.format(batch_id)])
     
     nb_samples = len(samples)
     
@@ -67,6 +69,6 @@ def show_samples(ids, target, samples, captions, loss, vocab_idx, model_name, ou
         if num_real % ncol == 0:
             num_real += ncol
     
-    plt.suptitle(model_name)   
-    plt.savefig(os.path.join(out_dir, '.'.join([model_name,'png'])))
+    plt.suptitle(file_name)   
+    plt.savefig(os.path.join(out_dir, '.'.join([file_name,'png'])))
  #   plt.show()
