@@ -170,7 +170,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--output_freq', type=int, default=1, help='frequency of output (default: 1, which means each epoch)')
     parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
     parser.add_argument('-g', '--batches_on_gpu', type=int, default=10, help='number of mini-batches to load simultaneously on GPU')
-    parser.add_argument('-d', '--delay_g', type=int, default=5, help='number of epoch to delay training generator')
+    parser.add_argument('-d', '--delay_g', type=int, default=0, help='number of epoch to delay training generator')
     parser.add_argument('--lrd', type=float, default=0.0002, help='learning rate of discriminator')
     parser.add_argument('--lrg', type=float, default=0.0002, help='learning rate of generator')
     
