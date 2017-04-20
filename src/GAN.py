@@ -394,7 +394,7 @@ class GAN(object):
         inp_G[self.generator.in_noise] = noise
         
         img_fake = lasagne.layers.get_output(self.generator.nn, inputs=inp_G)
-    #    img_fake_determ = lasagne.layers.get_output(self.generator.nn, inputs=noise, deterministic=True)
+        img_fake_determ = lasagne.layers.get_output(self.generator.nn, inputs=inp_G, deterministic=True)
     
         inp_D_real = OrderedDict()
         inp_D_real[self.discriminator.in_img] = images
@@ -403,15 +403,19 @@ class GAN(object):
         
         # Create expression for passing real data through the discriminator
         probs_real = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_real)
-    #    probs_real_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=images, deterministic=True)
+        probs_real_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_real, deterministic=True)
     
         inp_D_fake = OrderedDict()
         inp_D_fake[self.discriminator.in_img] = img_fake
         inp_D_fake[self.discriminator.in_caps] = caps
+        
+        inp_D_fake_determ = OrderedDict()
+        inp_D_fake_determ[self.discriminator.in_img] = img_fake_determ
+        inp_D_fake_determ[self.discriminator.in_caps] = caps
          
         # Create expression for passing fake data through the discriminator
         probs_fake = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_fake)
-    #    probs_fake_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=img_fake_determ, deterministic=True)
+        probs_fake_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_fake_determ, deterministic=True)
              
         # Create loss expressions
         loss_G = lasagne.objectives.binary_crossentropy(probs_fake, 0.9).mean()               
@@ -470,7 +474,7 @@ class GAN(object):
 
         self.evaluate_real = theano.function(
             inputs=[first_idx,last_idx],
-            outputs=[probs_real, accuracy_real],
+            outputs=[probs_real_determ, accuracy_real],
             givens={
                 images : self.img_var[first_idx:last_idx],
                 caps : self.caps_var[first_idx:last_idx]
@@ -479,7 +483,7 @@ class GAN(object):
         
         self.evaluate_fake = theano.function(
             inputs=[first_idx,last_idx],
-            outputs=[img_fake, probs_fake, accuracy_fake],
+            outputs=[img_fake_determ, probs_fake_determ, accuracy_fake],
             givens={
                 noise : self.noise_var[first_idx:last_idx],
                 frames : self.frames_var[first_idx:last_idx],
