@@ -60,18 +60,9 @@ class Discriminator(Model):
             lasagne.layers.Conv2DLayer(
                 lasagne.layers.dropout(layers[-1], p=.5),
                 name='Conv2DLayer1',
-                num_filters=64, filter_size=5, pad=2,
+                num_filters=64, filter_size=5, stride=2, pad=2,
                 nonlinearity=custom_rectify,
                 W=lasagne.init.HeNormal(gain='relu')))
-              
-        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-        layers.append(
-            lasagne.layers.MaxPool2DLayer(
-                layers[-1],
-                name='MaxPool2DLayer1',
-                pool_size=5, stride=2, pad=2)
-                      )
               
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
@@ -80,19 +71,10 @@ class Discriminator(Model):
                 lasagne.layers.Conv2DLayer(
                     lasagne.layers.dropout(layers[-1], p=.5),
                     name='Conv2DLayer2', 
-                    num_filters=128, filter_size=5, pad=2,
+                    num_filters=128, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
           
-        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-        layers.append(
-            lasagne.layers.MaxPool2DLayer(
-                layers[-1],
-                name='MaxPool2DLayer2',
-                pool_size=5, stride=2, pad=2)
-                      )
-              
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
          
         layers.append(
@@ -100,19 +82,10 @@ class Discriminator(Model):
                 lasagne.layers.Conv2DLayer(
                     lasagne.layers.dropout(layers[-1], p=.5),
                     name='Conv2DLayer3', 
-                    num_filters=256, filter_size=5, pad=2,
+                    num_filters=256, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
         
-        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-        layers.append(
-            lasagne.layers.MaxPool2DLayer(
-                layers[-1],
-                name='MaxPool2DLayer3',
-                pool_size=5, stride=2, pad=2)
-                      )
-              
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
 
         layers.append(
@@ -120,19 +93,10 @@ class Discriminator(Model):
                 lasagne.layers.Conv2DLayer(
                     lasagne.layers.dropout(layers[-1], p=.5),
                     name='Conv2DLayer4', 
-                    num_filters=512, filter_size=5, pad=2,
+                    num_filters=512, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
                 
-        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-        layers.append(
-            lasagne.layers.MaxPool2DLayer(
-                layers[-1],
-                name='MaxPool2DLayer4',
-                pool_size=5, stride=2, pad=2)
-                      )
-              
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
           
         layers.append(
@@ -215,18 +179,9 @@ class Generator(Model):
             lasagne.layers.Conv2DLayer(
                 layers[-1],
                 name='Conv2DLayer1',
-                num_filters=64, filter_size=5, pad=2,
+                num_filters=64, filter_size=5, stride=2, pad=2,
                 nonlinearity=custom_rectify,
                 W=lasagne.init.HeNormal(gain='relu')))
-              
-        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-        layers.append(
-            lasagne.layers.MaxPool2DLayer(
-                layers[-1],
-                name='MaxPool2DLayer1',
-                pool_size=5, stride=2, pad=2)
-                      )
               
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
          
@@ -235,19 +190,10 @@ class Generator(Model):
                 lasagne.layers.Conv2DLayer(
                     layers[-1], 
                     name='Conv2DLayer2', 
-                    num_filters=128, filter_size=5, pad=2,
+                    num_filters=128, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
           
-        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-        layers.append(
-            lasagne.layers.MaxPool2DLayer(
-                layers[-1],
-                name='MaxPool2DLayerq2',
-                pool_size=5, stride=2, pad=2)
-                      )
-              
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
          
         layers.append(
@@ -255,19 +201,10 @@ class Generator(Model):
                 lasagne.layers.Conv2DLayer(
                     layers[-1], 
                     name='Conv2DLayer3', 
-                    num_filters=256, filter_size=5, pad=2,
+                    num_filters=256, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
          
-        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-        layers.append(
-            lasagne.layers.MaxPool2DLayer(
-                layers[-1],
-                name='MaxPool2DLayer3',
-                pool_size=5, stride=2, pad=2)
-                      )
-              
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
 
         layers.append(
@@ -275,19 +212,10 @@ class Generator(Model):
                 lasagne.layers.Conv2DLayer(
                     layers[-1], 
                     name='Conv2DLayer4', 
-                    num_filters=512, filter_size=5, pad=2,
+                    num_filters=512, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
                     W=lasagne.init.HeNormal(gain='relu'))))
                  
-        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-        
-        layers.append(
-            lasagne.layers.MaxPool2DLayer(
-                layers[-1],
-                name='MaxPool2DLayer4',
-                pool_size=5, stride=2, pad=2)
-                      )
-              
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
           
         layers.append(
