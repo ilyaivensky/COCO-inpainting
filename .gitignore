@@ -1,6 +1,6 @@
 /models
 /logs
-/models_hades
+/models_gpu
 /src/*.pyc
 /preprocessed
 /resources
