@@ -235,7 +235,7 @@ class Generator(Model):
         layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.DenseLayer(
-                    layers[-1], 
+                    lasagne.layers.dropout(layers[-1], p=.5), 
                     name='DenseLayer1', 
                     num_units=512*4*4,
                     nonlinearity=custom_rectify,
@@ -253,7 +253,7 @@ class Generator(Model):
         
         layers.append(
             lasagne.layers.Upscale2DLayer(
-                layers[-1],
+                lasagne.layers.dropout(layers[-1], p=.5), 
                 name='Upscale2DLayer4',
                 scale_factor=2,
                 mode=upscale_method))
@@ -263,7 +263,7 @@ class Generator(Model):
         layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.Conv2DLayer(
-                    layers[-1], 
+                    lasagne.layers.dropout(layers[-1], p=.5), 
                     name='Conv2DLayer4', 
                     nonlinearity=custom_rectify,
                     num_filters=256, filter_size=5, stride=1, pad=2,
@@ -273,7 +273,7 @@ class Generator(Model):
         
         layers.append(
             lasagne.layers.Upscale2DLayer(
-                layers[-1],
+                lasagne.layers.dropout(layers[-1], p=.5), 
                 name='Upscale2DLayer3',
                 scale_factor=2,
                 mode=upscale_method))
@@ -283,7 +283,7 @@ class Generator(Model):
         layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.Conv2DLayer(
-                    layers[-1], 
+                    lasagne.layers.dropout(layers[-1], p=.5), 
                     name='Conv2DLayer3', 
                     nonlinearity=custom_rectify,
                     num_filters=128, filter_size=5, stride=1, pad=2,
@@ -293,7 +293,7 @@ class Generator(Model):
         
         layers.append(
             lasagne.layers.Upscale2DLayer(
-                layers[-1],
+                lasagne.layers.dropout(layers[-1], p=.5), 
                 name='Upscale2DLayer2',
                 scale_factor=2,
                 mode=upscale_method))
@@ -302,7 +302,7 @@ class Generator(Model):
            
         layers.append(
             lasagne.layers.Conv2DLayer(
-                layers[-1], 
+                lasagne.layers.dropout(layers[-1], p=.5),  
                 name='Conv2DLayer1',
                 nonlinearity=lasagne.nonlinearities.sigmoid, 
                 num_filters=3, filter_size=5, stride=1, pad=2,
@@ -388,22 +388,22 @@ class GAN(object):
 #         noise_vec, frames_img = lasagne.layers.get_output(
 #             [self.generator.in_noise, self.generator.in_frames])
 
-        inp_G = OrderedDict()
-        inp_G[self.generator.in_caps] = caps
-        inp_G[self.generator.in_frames] = frames
-        inp_G[self.generator.in_noise] = noise
+#         inp_G = OrderedDict()
+#         inp_G[self.generator.in_caps] = caps
+#         inp_G[self.generator.in_frames] = frames
+#         inp_G[self.generator.in_noise] = noise
         
-        img_fake = lasagne.layers.get_output(self.generator.nn, inputs=inp_G)
-        img_fake_determ = lasagne.layers.get_output(self.generator.nn, inputs=inp_G, deterministic=True)
+        img_fake = lasagne.layers.get_output(self.generator.nn)
+        img_fake_determ = lasagne.layers.get_output(self.generator.nn, deterministic=True)
     
-        inp_D_real = OrderedDict()
-        inp_D_real[self.discriminator.in_img] = images
-        inp_D_real[self.discriminator.in_caps] = caps
-        
+#         inp_D_real = OrderedDict()
+#         inp_D_real[self.discriminator.in_img] = images
+#         inp_D_real[self.discriminator.in_caps] = caps
+#         
         
         # Create expression for passing real data through the discriminator
-        probs_real = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_real)
-        probs_real_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_real, deterministic=True)
+        probs_real = lasagne.layers.get_output(self.discriminator.nn)
+        probs_real_determ = lasagne.layers.get_output(self.discriminator.nn, deterministic=True)
     
         inp_D_fake = OrderedDict()
         inp_D_fake[self.discriminator.in_img] = img_fake
