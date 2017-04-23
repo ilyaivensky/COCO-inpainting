@@ -136,7 +136,7 @@ class Generator(Model):
         
         self.noise_shape = 100
     
-        custom_rectify = lasagne.nonlinearities.rectify #LeakyRectify(0.1)
+        custom_rectify = lasagne.nonlinearities.LeakyRectify(0.1)
         upscale_method = 'repeat'
     
         self.logger.info('-----------build_generator-------------')
@@ -177,7 +177,7 @@ class Generator(Model):
               
         layers.append(
             lasagne.layers.Conv2DLayer(
-                layers[-1],
+                lasagne.layers.dropout(layers[-1], p=.5),
                 name='Conv2DLayer1',
                 num_filters=64, filter_size=5, stride=2, pad=2,
                 nonlinearity=custom_rectify,
@@ -188,7 +188,7 @@ class Generator(Model):
         layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.Conv2DLayer(
-                    layers[-1], 
+                    lasagne.layers.dropout(layers[-1], p=.5), 
                     name='Conv2DLayer2', 
                     num_filters=128, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
@@ -199,7 +199,7 @@ class Generator(Model):
         layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.Conv2DLayer(
-                    layers[-1], 
+                    lasagne.layers.dropout(layers[-1], p=.5), 
                     name='Conv2DLayer3', 
                     num_filters=256, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
@@ -210,7 +210,7 @@ class Generator(Model):
         layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.Conv2DLayer(
-                    layers[-1], 
+                    lasagne.layers.dropout(layers[-1], p=.5),
                     name='Conv2DLayer4', 
                     num_filters=512, filter_size=5, stride=2, pad=2,
                     nonlinearity=custom_rectify,
