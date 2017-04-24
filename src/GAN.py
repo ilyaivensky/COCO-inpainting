@@ -177,7 +177,7 @@ class Generator(Model):
               
         layers.append(
             lasagne.layers.Conv2DLayer(
-                lasagne.layers.dropout(layers[-1], p=.5),
+                layers[-1],
                 name='Conv2DLayer1',
                 num_filters=64, filter_size=5, stride=2, pad=2,
                 nonlinearity=custom_rectify,
@@ -302,7 +302,7 @@ class Generator(Model):
            
         layers.append(
             lasagne.layers.Conv2DLayer(
-                lasagne.layers.dropout(layers[-1], p=.5),  
+                layers[-1], 
                 name='Conv2DLayer1',
                 nonlinearity=lasagne.nonlinearities.sigmoid, 
                 num_filters=3, filter_size=5, stride=1, pad=2,
