@@ -65,8 +65,16 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
     data_stream = data.apply_default_transformers(
         data.get_example_stream())
     
+    skip_G_update = False
+    skip_D_update = False
+    
     for epoch in range(num_epochs):
         
+        if skip_D_update:
+            logging.info('skipping updates for Discriminator')
+        if skip_G_update:
+            logging.info('skipping updates for Generator')
+            
         start_time = time.time()
         # In each epoch, we do a full pass over the training data:
         train_D_real_loss = 0
@@ -100,18 +108,19 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
                 """
                 Train discriminator right away, but delay training of generator
                 """ 
-#                 logging.debug('real, first={}, last={}'.format(first, last))
-                last_train_D_real_loss = gan.train_D_real(first, last) * (last-first)
-                train_D_real_loss += last_train_D_real_loss
-                last_train_D_real_loss /= (last-first)
-                processed_D_real += last-first
-                
-                last_train_D_fake_loss = gan.train_D_fake(first, last) * (last-first)
-                train_D_fake_loss += last_train_D_fake_loss
-                last_train_D_fake_loss /= (last-first)
-                processed_D_fake += last-first
+                if not skip_D_update:
+    #                 logging.debug('real, first={}, last={}'.format(first, last))
+                    last_train_D_real_loss = gan.train_D_real(first, last) * (last-first)
+                    train_D_real_loss += last_train_D_real_loss
+                    last_train_D_real_loss /= (last-first)
+                    processed_D_real += last-first
+                    
+                    last_train_D_fake_loss = gan.train_D_fake(first, last) * (last-first)
+                    train_D_fake_loss += last_train_D_fake_loss
+                    last_train_D_fake_loss /= (last-first)
+                    processed_D_fake += last-first
                    
-                if epoch >= delay_g and (i+1) % unroll == 0:
+                if not skip_G_update and epoch >= delay_g and (i+1) % unroll == 0:
                     # train generator with accumulated batches
                     while gen_i <= i: 
                         gen_first = gen_i * batch_size
@@ -153,6 +162,16 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         # Be on a safe side - if the job is killed, it is better to preserve at least something
         if (epoch+1) % out_freq == 0 or epoch == num_epochs - 1:
             gan.save_params('{}.{:03d}'.format(out_model, epoch + 1))
+            
+        if train_G_loss is None or train_D_real_loss is None:
+            skip_D_update = False
+            skip_G_update = False
+        else:
+            loss_diff = train_D_real_loss - train_G_loss
+            if loss_diff > 0.3:
+                skip_G_update = True
+            elif loss_diff < -0.3:
+                skip_D_update = True
               
 #    evaluate_GAN(gan, data_fp, 'val2014', 10)
         
