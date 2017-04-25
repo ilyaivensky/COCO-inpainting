@@ -167,7 +167,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
             skip_D_update = False
             skip_G_update = False
         else:
-            loss_diff = train_D_real_loss - train_G_loss
+            loss_diff = (train_D_real_loss+train_D_fake_loss) / 2 - train_G_loss
             if loss_diff > 0.3:
                 skip_G_update = True
             elif loss_diff < -0.3:
