@@ -253,7 +253,7 @@ class Generator(Model):
         
         layers.append(
             lasagne.layers.Upscale2DLayer(
-                lasagne.layers.dropout(layers[-1], p=.5), 
+                layers[-1], 
                 name='Upscale2DLayer4',
                 scale_factor=2,
                 mode=upscale_method))
@@ -273,7 +273,7 @@ class Generator(Model):
         
         layers.append(
             lasagne.layers.Upscale2DLayer(
-                lasagne.layers.dropout(layers[-1], p=.5), 
+                layers[-1],  
                 name='Upscale2DLayer3',
                 scale_factor=2,
                 mode=upscale_method))
@@ -293,7 +293,7 @@ class Generator(Model):
         
         layers.append(
             lasagne.layers.Upscale2DLayer(
-                lasagne.layers.dropout(layers[-1], p=.5), 
+                layers[-1], 
                 name='Upscale2DLayer2',
                 scale_factor=2,
                 mode=upscale_method))
