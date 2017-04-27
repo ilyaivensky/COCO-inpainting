@@ -230,7 +230,7 @@ class Generator(Model):
           
         layers.append(
             lasagne.layers.FlattenLayer(
-                layers[-1], 
+                lasagne.layers.dropout(layers[-1], p=.5),  
                 name='FlattenLayer'))
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
@@ -245,7 +245,7 @@ class Generator(Model):
         layers.append(
             lasagne.layers.batch_norm(
                 lasagne.layers.DenseLayer(
-                    lasagne.layers.dropout(layers[-1], p=.5), 
+                    layers[-1], 
                     name='DenseLayer1', 
                     num_units=512*4*4,
                     nonlinearity=custom_rectify,
