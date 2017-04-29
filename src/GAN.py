@@ -112,16 +112,16 @@ class Discriminator(Model):
                 name='ConcatLayer'))
          
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
-#         
-#         layers.append(
-#             lasagne.layers.DenseLayer(
-#                 layers[-1],
-#                 name='DenseLayer', 
-#                 num_units=8192,
-#                 nonlinearity=custom_rectify,
-#                 W=lasagne.init.HeNormal(gain='relu')))
-#         
-#         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+         
+        layers.append(
+            lasagne.layers.DenseLayer(
+                layers[-1],
+                name='DenseLayer1', 
+                num_units=8192,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
+         
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
         layers.append(
             lasagne.layers.DenseLayer(
