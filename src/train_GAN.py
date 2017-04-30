@@ -163,15 +163,15 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         if (epoch+1) % out_freq == 0 or epoch == num_epochs - 1:
             gan.save_params('{}.{:03d}'.format(out_model, epoch + 1))
             
-        if train_G_loss is None or train_D_real_loss is None:
-            skip_D_update = False
-            skip_G_update = False
-        else:
-            loss_diff = (train_D_real_loss+train_D_fake_loss) / 2 - train_G_loss
-            if loss_diff > 0.3:
-                skip_G_update = True
-            elif loss_diff < -0.3:
-                skip_D_update = True
+#         if train_G_loss is None or train_D_real_loss is None:
+#             skip_D_update = False
+#             skip_G_update = False
+#         else:
+#             loss_diff = (train_D_real_loss+train_D_fake_loss) / 2 - train_G_loss
+#             if loss_diff > 0.3:
+#                 skip_G_update = True
+#             elif loss_diff < -0.3:
+#                 skip_D_update = True
               
 #    evaluate_GAN(gan, data_fp, 'val2014', 10)
         
