@@ -128,7 +128,7 @@ class Discriminator(Model):
                 layers[-1],
                 name='DenseLayer2', 
                 num_units=1,
-                nonlinearity=lasagne.nonlinearities.sigmoid,
+                nonlinearity=lasagne.nonlinearities.identity,
                 W=lasagne.init.HeNormal(gain=1.0)))
         
     
