@@ -428,9 +428,9 @@ class DCGAN(object):
         probs_fake_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_fake_determ, deterministic=True)
              
         # Create loss expressions
-        loss_G = lasagne.objectives.squared_error(probs_fake, 1.0).mean()               
-        loss_D_real = lasagne.objectives.squared_error(probs_real, 1.0).mean()
-        loss_D_fake = lasagne.objectives.squared_error(probs_fake, 0.0).mean()
+        loss_G = (0.5 * lasagne.objectives.squared_error(probs_fake, 1.0)).mean()               
+        loss_D_real = (0.5 * lasagne.objectives.squared_error(probs_real, 1.0)).mean()
+        loss_D_fake = (0.5 * lasagne.objectives.squared_error(probs_fake, 0.0)).mean()
      #   loss_D = loss_D_real + loss_D_fake
                 
         # Create update expressions for training
