@@ -8,7 +8,7 @@ import theano
 
 import numpy as np
 
-from GAN import GAN
+from DCGAN import DCGAN
 from utils import setup_logging, generate_z
 
 import argparse
@@ -58,23 +58,15 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
     data.example_iteration_scheme = SequentialScheme(num_examples, num_examples_on_gpu)
     data.default_transformers = uint8_pixels_to_floatX(('train2014/frame', 'train2014/img'))
         
-    gan = GAN(num_examples_on_gpu, voc_size, lrg=lrg, lrd=lrd)
+    gan = DCGAN(num_examples_on_gpu, voc_size, lrg=lrg, lrd=lrd)
     if params_file:
         gan.load_params(params_file)
    
     data_stream = data.apply_default_transformers(
         data.get_example_stream())
-    
-    skip_G_update = False
-    skip_D_update = False
-    
+       
     for epoch in range(num_epochs):
-        
-        if skip_D_update:
-            logging.info('skipping updates for Discriminator')
-        if skip_G_update:
-            logging.info('skipping updates for Generator')
-            
+               
         start_time = time.time()
         # In each epoch, we do a full pass over the training data:
         train_D_real_loss = 0
@@ -108,19 +100,19 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
                 """
                 Train discriminator right away, but delay training of generator
                 """ 
-                if not skip_D_update:
-    #                 logging.debug('real, first={}, last={}'.format(first, last))
-                    last_train_D_real_loss = gan.train_D_real(first, last) * (last-first)
-                    train_D_real_loss += last_train_D_real_loss
-                    last_train_D_real_loss /= (last-first)
-                    processed_D_real += last-first
-                    
-                    last_train_D_fake_loss = gan.train_D_fake(first, last) * (last-first)
-                    train_D_fake_loss += last_train_D_fake_loss
-                    last_train_D_fake_loss /= (last-first)
-                    processed_D_fake += last-first
+                
+#                 logging.debug('real, first={}, last={}'.format(first, last))
+                last_train_D_real_loss = gan.train_D_real(first, last) * (last-first)
+                train_D_real_loss += last_train_D_real_loss
+                last_train_D_real_loss /= (last-first)
+                processed_D_real += last-first
+                
+                last_train_D_fake_loss = gan.train_D_fake(first, last) * (last-first)
+                train_D_fake_loss += last_train_D_fake_loss
+                last_train_D_fake_loss /= (last-first)
+                processed_D_fake += last-first
                    
-                if not skip_G_update and epoch >= delay_g and (i+1) % unroll == 0:
+                if epoch >= delay_g and (i+1) % unroll == 0:
                     # train generator with accumulated batches
                     while gen_i <= i: 
                         gen_first = gen_i * batch_size
@@ -163,16 +155,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
         if (epoch+1) % out_freq == 0 or epoch == num_epochs - 1:
             gan.save_params('{}.{:03d}'.format(out_model, epoch + 1))
             
-#         if train_G_loss is None or train_D_real_loss is None:
-#             skip_D_update = False
-#             skip_G_update = False
-#         else:
-#             loss_diff = (train_D_real_loss+train_D_fake_loss) / 2 - train_G_loss
-#             if loss_diff > 0.3:
-#                 skip_G_update = True
-#             elif loss_diff < -0.3:
-#                 skip_D_update = True
-              
+          
 #    evaluate_GAN(gan, data_fp, 'val2014', 10)
         
 
@@ -185,7 +168,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--params_dir', type=str, help='directory with parameters files (npz format)')
     parser.add_argument('-b', '--max_example_stream_iter', type=int, help='the total max number_of_batches_to_train *  batches_on_gpu (defailt: None, meaning train using all examples). If provided, it will be multiplied by delay_g_training')
     parser.add_argument('-s', '--batch_size', type=int, default=128, help='the number of examples per batch')
-    parser.add_argument('-o', '--out_model', type=str, default='../models/GAN', help='otput model')
+    parser.add_argument('-o', '--out_model', type=str, default='../models/DCGAN', help='otput model')
     parser.add_argument('-f', '--output_freq', type=int, default=1, help='frequency of output (default: 1, which means each epoch)')
     parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
     parser.add_argument('-g', '--batches_on_gpu', type=int, default=10, help='number of mini-batches to load simultaneously on GPU')

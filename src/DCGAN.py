@@ -343,7 +343,7 @@ class Generator(Model):
         self.nn = layers[-1]
         
         
-class GAN(object):
+class DCGAN(object):
     
     def __init__(self, num_on_gpu, voc_size, lrg=0.0002, lrd=0.0002):
         

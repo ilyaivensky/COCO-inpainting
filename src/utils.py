@@ -35,7 +35,7 @@ def generate_z(shape):
     
     return np.asarray(np.random.uniform(size=shape), dtype=config.floatX)
           
-def show_samples(ids, target, samples, captions, loss, vocab_idx, model_name, batch_id, out_dir):
+def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id, out_dir):
 
     import math
     import matplotlib.pyplot as plt
@@ -62,7 +62,6 @@ def show_samples(ids, target, samples, captions, loss, vocab_idx, model_name, ba
         ax = plt.subplot(nrows, ncol, num_real + ncol + 1)
         ax.get_xaxis().set_visible(False) 
         ax.get_yaxis().set_visible(False) 
-        ax.set_title('{:.3f}'.format(loss[i]))
         plt.imshow(samples[i])
         
         num_real += 1

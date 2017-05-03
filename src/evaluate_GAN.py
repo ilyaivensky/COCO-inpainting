@@ -10,7 +10,7 @@ import gensim
 import numpy as np
 from numpy import random as rnd 
 
-from GAN import GAN
+from DCGAN import DCGAN
 from utils import setup_logging, show_samples, generate_z
 
 import argparse
@@ -61,7 +61,7 @@ def evaluate(model, data_file, split, w2v_model, batch_size, num_batches, model_
         model.caps_var.set_value(sparse_floatX(caps))
     
         samples, loss, acc = model.evaluate_fake(0,batch_size)
-        show_samples(idxs, (imgs * 255).astype(np.uint8), (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, loss.ravel(), vocab_idx, model_name, batch_id, model_dir)
+        show_samples(idxs, (imgs * 255).astype(np.uint8), (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, vocab_idx, model_name, batch_id, model_dir)
          
         logging.info('prediction loss and acc:\t\t{}'.format(zip(loss, acc)))
         logging.info('loss mean: {:.3f}, var: {:.3f}'.format(np.asscalar(np.mean(loss, axis=0)), np.asscalar(np.var(loss, axis=0))))
@@ -77,7 +77,7 @@ def main(data_file, params_file, w2v_file, out_dir, num_batches):
     
     batch_size=30
     
-    gan = GAN(batch_size, 11172)     
+    gan = DCGAN(batch_size, 11172)     
     gan.load_params(params_file)
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
