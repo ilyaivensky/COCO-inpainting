@@ -463,7 +463,7 @@ class EBGAN(object):
             csr_matrix((num_on_gpu, voc_size), dtype=theano.config.floatX), 
             name='caps_var', 
             borrow=True)
-        
+          
         """ 
         Theano symbolic variables
         """
@@ -521,7 +521,7 @@ class EBGAN(object):
         # Create loss expressions
         loss_Gz = (0.5*lasagne.objectives.squared_error(DGz, Gz)).mean()               
         loss_Dx = (0.5*lasagne.objectives.squared_error(x, Dx)).mean()
-        loss_DGz = max(0, margin - loss_Gz)
+        loss_DGz = 0.5 * (margin - loss_Gz + abs(margin - loss_Gz))
         loss_D = loss_Dx + loss_DGz
                         
         # Create update expressions for training
