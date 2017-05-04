@@ -8,7 +8,7 @@ import theano
 
 import numpy as np
 
-from DCGAN import DCGAN
+from EBGAN import EBGAN
 from utils import setup_logging, generate_z
 
 import argparse
@@ -58,7 +58,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
     data.example_iteration_scheme = SequentialScheme(num_examples, num_examples_on_gpu)
     data.default_transformers = uint8_pixels_to_floatX(('train2014/frame', 'train2014/img'))
         
-    gan = DCGAN(num_examples_on_gpu, voc_size, lrg=lrg, lrd=lrd)
+    gan = EBGAN(num_examples_on_gpu, voc_size, lrg=lrg, lrd=lrd)
     if params_file:
         gan.load_params(params_file)
    
