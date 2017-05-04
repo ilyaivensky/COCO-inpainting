@@ -29,7 +29,7 @@ from sparse_matrix_utils import sparse_floatX
 
 def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batches_on_gpu, delay_g, lrg, lrd,
           max_example_stream_iter=None, 
-          split='train2014', initial_eta=2e-4, unroll=1, params_file=None):
+          split='train2014', initial_eta=2e-4, unroll=1, params_file=None, start_epoch=0):
     
     logger = logging.getLogger(__name__)
     
@@ -65,7 +65,7 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
     data_stream = data.apply_default_transformers(
         data.get_example_stream())
        
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
                
         start_time = time.time()
         # In each epoch, we do a full pass over the training data:
@@ -175,6 +175,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--delay_g', type=int, default=0, help='number of epoch to delay training generator')
     parser.add_argument('--lrd', type=float, default=0.0002, help='learning rate of discriminator')
     parser.add_argument('--lrg', type=float, default=0.0002, help='learning rate of generator')
+    parser.add_argument('--start_epoch', type=int, default=0, help='start counting epochs from this number')
     
     args = parser.parse_args()
     
@@ -186,4 +187,4 @@ if __name__ == '__main__':
           voc_size=11172,  num_epochs=args.num_epochs, batch_size=args.batch_size, lrg=args.lrg, lrd=args.lrd,
           params_file=args.params_dir, batches_on_gpu=args.batches_on_gpu, delay_g=args.delay_g, 
           unroll=args.batches_on_gpu, 
-          max_example_stream_iter=args.max_example_stream_iter)
+          max_example_stream_iter=args.max_example_stream_iter, start_epoch=args.start_epoch)
