@@ -26,7 +26,7 @@ from sparse_matrix_utils import sparse_floatX
 import  os
 from os.path import basename
 
-def evaluate(model, data_file, split, w2v_model, batch_size, num_batches, model_name, out_dir):
+def evaluate(model, data_file, split, w2v_model, num_batches, model_name, out_dir, nrows, ncols):
       
     vocab_idx = w2v_model.wv.index2word
     
@@ -46,6 +46,7 @@ def evaluate(model, data_file, split, w2v_model, batch_size, num_batches, model_
         sources=('val2014/id', 'val2014/frame', 'val2014/img', 'val2014/capt'), 
         load_in_memory=True)
     
+    batch_size = nrows * ncols
     num_examples = num_batches * batch_size
     data.example_iteration_scheme = SequentialScheme(num_examples, batch_size) #we intend to do only 1 batch
     data.default_transformers = uint8_pixels_to_floatX(('val2014/frame', 'val2014/img'))
@@ -61,7 +62,8 @@ def evaluate(model, data_file, split, w2v_model, batch_size, num_batches, model_
         model.caps_var.set_value(sparse_floatX(caps))
     
         samples, loss, acc = model.evaluate_fake(0,batch_size)
-        show_samples(idxs, (imgs * 255).astype(np.uint8), (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, loss.ravel(), vocab_idx, model_name, batch_id, model_dir)
+
+        show_samples(idxs, (imgs * 255).astype(np.uint8), (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, vocab_idx, model_name, batch_id, model_dir, nrows, ncols)
          
         logging.info('prediction loss and acc:\t\t{}'.format(zip(loss, acc)))
         logging.info('loss mean: {:.3f}, var: {:.3f}'.format(np.asscalar(np.mean(loss, axis=0)), np.asscalar(np.var(loss, axis=0))))
@@ -70,20 +72,19 @@ def evaluate(model, data_file, split, w2v_model, batch_size, num_batches, model_
         if batch_id == num_batches - 1:
             break
 
-def main(data_file, params_file, w2v_file, out_dir, num_batches):
+def main(data_file, params_file, w2v_file, out_dir, num_batches, nrows, ncols):
     
     logger = logging.getLogger(__name__)
     logger.info('Loading data from {}...'.format(data_file))  
     
-    batch_size=30
-    
-    gan = GAN(batch_size, 11172)     
+    gan = GAN(nrows * ncols, 11172)     
+
     gan.load_params(params_file)
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
     
 #    with h5py.File(data_file,'r') as hf:
-    evaluate(gan, data_file, 'val2014', w2v_model, batch_size, num_batches, basename(params_file), out_dir)
+    evaluate(gan, data_file, 'val2014', w2v_model, num_batches, basename(params_file), out_dir, nrows, ncols)
 
 if __name__ == '__main__':
     
@@ -101,9 +102,11 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--log_file', type=str, default='logging.yaml', help='file name with logging configuration')
     parser.add_argument('-o', '--out_dir', type=str, default='../results', help='output directory')
     parser.add_argument('-n', '--num_batches', type=int, default=1, help='number of mini-batches')
+    parser.add_argument('-r', '--nrows', type=int, default=3, help='number of double rows (origin and sample)')
+    parser.add_argument('-c', '--ncols', type=int, default=16, help='number of columns')
     
     args = parser.parse_args()
     
     setup_logging(default_path=args.log_file)
     
-    main(args.data_file, args.model, args.w2v_file, args.out_dir, args.num_batches)
+    main(args.data_file, args.model, args.w2v_file, args.out_dir, args.num_batches, args.nrows, args.ncols)
