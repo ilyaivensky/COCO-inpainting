@@ -119,3 +119,4 @@ if __name__ == '__main__':
     setup_logging(default_path=args.log_file)
     
     main(args.data_file, args.model, args.w2v_file, args.out_dir, args.num_batches, args.nrows, args.ncols, split, args.demo)
+    
