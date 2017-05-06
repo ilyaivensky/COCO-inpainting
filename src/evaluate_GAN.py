@@ -102,7 +102,8 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--nrows', type=int, default=3, help='number of double rows (origin and sample)')
     parser.add_argument('-c', '--ncols', type=int, default=6, help='number of columns')
     parser.add_argument('--split', type=str, default='val', help='split of dataset (train or val)')
-    
+
+   
     args = parser.parse_args()
     
     if args.split == 'val':
