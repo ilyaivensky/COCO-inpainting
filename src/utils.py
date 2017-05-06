@@ -35,38 +35,41 @@ def generate_z(shape):
     
     return np.asarray(np.random.uniform(size=shape), dtype=config.floatX)
           
-def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id, out_dir):
+def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id, out_dir, nrows, ncols):
 
-    import math
     import matplotlib.pyplot as plt
+    import matplotlib.gridspec as gridspec
     
     file_name = '-'.join([model_name, '{:03d}'.format(batch_id)])
+     
+    subplot_num = 0
     
-    nb_samples = len(samples)
-    
-    ncol = 10
-    nrows = math.ceil(nb_samples / ncol) * 2
-    
-    num_real = 0
-    
-    for i in range(nb_samples):
-            
-        if captions[i].nnz == 0:
-            logging.warning('Empty captions for {}'.format(ids[i]))
-             
-        ax = plt.subplot(nrows, ncol, num_real + 1)
-        ax.get_xaxis().set_visible(False) 
-        ax.get_yaxis().set_visible(False) 
+    plt.figure(figsize = (nrows * 2, ncols))
+    gs1 = gridspec.GridSpec(nrows * 2, ncols)
+    gs1.update(wspace=0.025, hspace=0.05) # set the spacing between axes. 
+
+   
+    for i in range(nrows * ncols):
+         
+        """
+        show target
+        """   
+        ax = plt.subplot(gs1[subplot_num])
+        plt.axis('off')
+        ax.set_aspect('equal')
         plt.imshow(target[i])
-    
-        ax = plt.subplot(nrows, ncol, num_real + ncol + 1)
-        ax.get_xaxis().set_visible(False) 
-        ax.get_yaxis().set_visible(False) 
-        plt.imshow(samples[i])
         
-        num_real += 1
-        if num_real % ncol == 0:
-            num_real += ncol
+        """
+        show sample
+        """ 
+        ax = plt.subplot(gs1[subplot_num + ncols])
+        plt.axis('off')
+        ax.set_aspect('equal')
+        plt.imshow(samples[i])
+         
+        subplot_num += 1
+        if subplot_num % ncols == 0:
+            subplot_num += ncols
     
     plt.suptitle(file_name)   
     plt.savefig(os.path.join(out_dir, '.'.join([file_name,'png'])))
