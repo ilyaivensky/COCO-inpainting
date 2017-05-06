@@ -106,6 +106,8 @@ class Discriminator(Model):
         
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
+        self.image_features = layers[-1]
+        
         layers.append(
             lasagne.layers.ConcatLayer(
                 [layers[-1], caps_nn],
@@ -135,6 +137,124 @@ class Discriminator(Model):
         self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
         
         self.nn = layers[-1]   
+        
+#         print ('params', len(lasagne.layers.get_all_param_values(self.nn)))
+
+class Comparator(Model):
+    
+    def __init__(self, voc_size, img_var=None):
+        
+        Model.__init__(self, "Comparator")
+        
+        
+        layers = []
+    
+        custom_rectify = lasagne.nonlinearities.LeakyRectify(0.1)
+        
+        self.logger.info('-----------build_comparator-------------')
+        
+        self.in_img = lasagne.layers.InputLayer(
+                shape=(None, 3, 64, 64),
+                name='InputLayer_Img',
+                input_var=img_var)
+        
+        layers.append(self.in_img)
+        
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+         
+      #  W_val = lasagne.init.HeNormal(gain='relu').sample(layers[-1].output_shape)
+         
+        layers.append(
+            lasagne.layers.Conv2DLayer(
+                lasagne.layers.dropout(layers[-1], p=.5),
+                name='Conv2DLayer1',
+                num_filters=64, filter_size=5, stride=2, pad=2,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
+              
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+        
+        layers.append(
+            lasagne.layers.Conv2DLayer(
+                lasagne.layers.dropout(layers[-1], p=.5),
+                name='Conv2DLayer2', 
+                num_filters=128, filter_size=5, stride=2, pad=2,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
+          
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+         
+        layers.append(
+            lasagne.layers.Conv2DLayer(
+                lasagne.layers.dropout(layers[-1], p=.5),
+                name='Conv2DLayer3', 
+                num_filters=256, filter_size=5, stride=2, pad=2,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
+        
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+
+        layers.append(
+            lasagne.layers.Conv2DLayer(
+                lasagne.layers.dropout(layers[-1], p=.5),
+                name='Conv2DLayer4', 
+                num_filters=512, filter_size=5, stride=2, pad=2,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
+                
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+        
+        layers.append(
+            lasagne.layers.Conv2DLayer(
+                lasagne.layers.dropout(layers[-1], p=.5),
+                name='Conv2DLayer5', 
+                num_filters=1024, filter_size=2, stride=2, pad=1,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
+                
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+        
+        layers.append(
+            lasagne.layers.Conv2DLayer(
+                lasagne.layers.dropout(layers[-1], p=.5),
+                name='Conv2DLayer6', 
+                num_filters=2048, filter_size=1, stride=1, pad=0,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
+                
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+          
+          
+        layers.append(
+            lasagne.layers.FlattenLayer(
+                lasagne.layers.dropout(layers[-1], p=.5),
+                name='FlattenLayer'))
+        
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+            
+        layers.append(
+            lasagne.layers.DenseLayer(
+                layers[-1],
+                name='DenseLayer1', 
+                num_units=8192,
+                nonlinearity=custom_rectify,
+                W=lasagne.init.HeNormal(gain='relu')))
+        
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+        
+        layers.append(
+            lasagne.layers.DenseLayer(
+                layers[-1],
+                name='DenseLayer1', 
+                num_units=8192,
+                nonlinearity=lasagne.nonlinearities.sigmoid,
+                W=lasagne.init.HeNormal(gain='relu')))
+                
+         
+        self.logger.debug('{}, {}'.format(layers[-1].name, layers[-1].output_shape))
+        
+       
+        self.nn_image = layers[-1]   
         
 #         print ('params', len(lasagne.layers.get_all_param_values(self.nn)))
 
@@ -388,6 +508,7 @@ class DCGAN(object):
     
         self.generator = Generator(voc_size, noise, frames, caps)
         self.discriminator = Discriminator(voc_size, images, caps)
+      #  self.comparator = Comparator(images)
         
         """
         Theano graph
@@ -403,8 +524,8 @@ class DCGAN(object):
 #         inp_G[self.generator.in_frames] = frames
 #         inp_G[self.generator.in_noise] = noise
         
-        img_fake = lasagne.layers.get_output(self.generator.nn)
-        img_fake_determ = lasagne.layers.get_output(self.generator.nn, deterministic=True)
+        Gz = lasagne.layers.get_output(self.generator.nn)
+        Gz_determ = lasagne.layers.get_output(self.generator.nn, deterministic=True)
     
 #         inp_D_real = OrderedDict()
 #         inp_D_real[self.discriminator.in_img] = images
@@ -412,25 +533,28 @@ class DCGAN(object):
 #         
         
         # Create expression for passing real data through the discriminator
-        probs_real = lasagne.layers.get_output(self.discriminator.nn)
-        probs_real_determ = lasagne.layers.get_output(self.discriminator.nn, deterministic=True)
+        Dx = lasagne.layers.get_output(self.discriminator.nn)
+        Dx_determ = lasagne.layers.get_output(self.discriminator.nn, deterministic=True)
+        
+        Cx = lasagne.layers.get_output(self.discriminator.image_features)
+        CGz = lasagne.layers.get_output(self.discriminator.image_features, inputs=Gz)
     
         inp_D_fake = OrderedDict()
-        inp_D_fake[self.discriminator.in_img] = img_fake
+        inp_D_fake[self.discriminator.in_img] = Gz
         inp_D_fake[self.discriminator.in_caps] = caps
         
         inp_D_fake_determ = OrderedDict()
-        inp_D_fake_determ[self.discriminator.in_img] = img_fake_determ
+        inp_D_fake_determ[self.discriminator.in_img] = Gz_determ
         inp_D_fake_determ[self.discriminator.in_caps] = caps
          
         # Create expression for passing fake data through the discriminator
-        probs_fake = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_fake)
-        probs_fake_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_fake_determ, deterministic=True)
+        DGz = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_fake)
+        DGz_determ = lasagne.layers.get_output(self.discriminator.nn, inputs=inp_D_fake_determ, deterministic=True)
              
         # Create loss expressions
-        loss_G = lasagne.objectives.binary_crossentropy(probs_fake, 0.9).mean()               
-        loss_D_real = lasagne.objectives.binary_crossentropy(probs_real, 0.9).mean()
-        loss_D_fake = lasagne.objectives.binary_crossentropy(probs_fake, 0.0).mean()
+        loss_G = 0.5*(lasagne.objectives.binary_crossentropy(DGz, 0.9).mean()) + 0.5*((T.sqrt((Cx-CGz) ** 2).sum(axis=1)).mean())         
+        loss_D_real = lasagne.objectives.binary_crossentropy(Dx, 0.9).mean()
+        loss_D_fake = lasagne.objectives.binary_crossentropy(DGz, 0.0).mean()
      #   loss_D = loss_D_real + loss_D_fake
                 
         # Create update expressions for training
@@ -443,8 +567,8 @@ class DCGAN(object):
         updates_D_real = lasagne.updates.adam(loss_D_real, params_D, learning_rate=lrd, beta1=0.5)
         updates_D_fake = lasagne.updates.adam(loss_D_fake, params_D, learning_rate=lrd, beta1=0.5)
         
-        accuracy_real = lasagne.objectives.binary_accuracy(probs_real, 1.0, 0.5)
-        accuracy_fake = lasagne.objectives.binary_accuracy(probs_fake, 0.0, 0.5)
+        accuracy_real = lasagne.objectives.binary_accuracy(Dx, 1.0, 0.5)
+        accuracy_fake = lasagne.objectives.binary_accuracy(DGz, 0.0, 0.5)
         
         """
         Theano functions
@@ -478,13 +602,14 @@ class DCGAN(object):
             givens={
                 caps : self.caps_var[first_idx:last_idx],
                 noise : self.noise_var[first_idx:last_idx],
-                frames : self.frames_var[first_idx:last_idx]
+                frames : self.frames_var[first_idx:last_idx],
+                images : self.img_var[first_idx:last_idx]
             }
         )
 
         self.evaluate_real = theano.function(
             inputs=[first_idx,last_idx],
-            outputs=[probs_real_determ, accuracy_real],
+            outputs=[Dx_determ, accuracy_real],
             givens={
                 images : self.img_var[first_idx:last_idx],
                 caps : self.caps_var[first_idx:last_idx]
@@ -493,7 +618,7 @@ class DCGAN(object):
         
         self.evaluate_fake = theano.function(
             inputs=[first_idx,last_idx],
-            outputs=[img_fake_determ, probs_fake_determ, accuracy_fake],
+            outputs=[Gz_determ, DGz_determ, accuracy_fake],
             givens={
                 noise : self.noise_var[first_idx:last_idx],
                 frames : self.frames_var[first_idx:last_idx],
