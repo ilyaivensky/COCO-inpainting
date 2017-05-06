@@ -80,6 +80,7 @@ def main(data_file, params_file, w2v_file, out_dir, num_batches, nrows, ncols, s
     gan.load_params(params_file)
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
+
     evaluate(gan, data_file, split, w2v_model, num_batches, basename(params_file), out_dir, nrows, ncols)
 
 if __name__ == '__main__':
@@ -114,3 +115,4 @@ if __name__ == '__main__':
     setup_logging(default_path=args.log_file)
     
     main(args.data_file, args.model, args.w2v_file, args.out_dir, args.num_batches, args.nrows, args.ncols, split)
+
