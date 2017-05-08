@@ -76,7 +76,7 @@ def main(data_file, params_file, w2v_file, out_dir, num_batches, nrows, ncols, s
     logger = logging.getLogger(__name__)
     logger.info('Loading data from {}...'.format(data_file))  
     
-    gan = GAN(nrows * ncols, 11172)     
+    gan = DCGAN(nrows * ncols, 11172)     
     gan.load_params(params_file)
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
