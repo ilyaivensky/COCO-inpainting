@@ -26,11 +26,14 @@ from sparse_matrix_utils import sparse_floatX
 import  os
 from os.path import basename
 
-def evaluate(model, data_file, split, w2v_model, num_batches, model_name, out_dir, nrows, ncols):
+def evaluate(model, data_file, split, w2v_model, num_batches, model_name, out_dir, nrows, ncols, demo):
       
     vocab_idx = w2v_model.wv.index2word
     
-    model_dir = os.path.join(out_dir, model_name)
+    if demo:
+        model_dir = os.path.join(out_dir, model_name,'demo')
+    else:
+        model_dir = os.path.join(out_dir, model_name)
     
     try:
         os.mkdir(model_dir)
@@ -62,7 +65,8 @@ def evaluate(model, data_file, split, w2v_model, num_batches, model_name, out_di
         model.caps_var.set_value(sparse_floatX(caps))
     
         samples, loss, acc = model.evaluate_fake(0,batch_size)
-        show_samples(idxs, (imgs * 255).astype(np.uint8), (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, vocab_idx, model_name, batch_id, model_dir, nrows, ncols, split)
+        show_samples(idxs, (imgs * 255).astype(np.uint8), (samples.transpose(0,2,3,1) * 255).astype(np.uint8), caps, \
+                     vocab_idx, model_name, batch_id, model_dir, nrows, ncols, split, demo)
          
         logging.info('prediction loss and acc:\t\t{}'.format(zip(loss, acc)))
         logging.info('loss mean: {:.3f}, var: {:.3f}'.format(np.asscalar(np.mean(loss, axis=0)), np.asscalar(np.var(loss, axis=0))))
@@ -71,7 +75,7 @@ def evaluate(model, data_file, split, w2v_model, num_batches, model_name, out_di
         if batch_id == num_batches - 1:
             break
 
-def main(data_file, params_file, w2v_file, out_dir, num_batches, nrows, ncols, split):
+def main(data_file, params_file, w2v_file, out_dir, num_batches, nrows, ncols, split, demo):
     
     logger = logging.getLogger(__name__)
     logger.info('Loading data from {}...'.format(data_file))  
@@ -80,7 +84,7 @@ def main(data_file, params_file, w2v_file, out_dir, num_batches, nrows, ncols, s
     gan.load_params(params_file)
     
     w2v_model = gensim.models.Word2Vec.load(w2v_file)
-    evaluate(gan, data_file, split, w2v_model, num_batches, basename(params_file), out_dir, nrows, ncols)
+    evaluate(gan, data_file, split, w2v_model, num_batches, basename(params_file), out_dir, nrows, ncols, demo)
 
 if __name__ == '__main__':
     
@@ -101,6 +105,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--nrows', type=int, default=3, help='number of double rows (origin and sample)')
     parser.add_argument('-c', '--ncols', type=int, default=6, help='number of columns')
     parser.add_argument('--split', type=str, default='val', help='split of dataset (train or val)')
+    parser.add_argument('--demo', action='store_true', help="Activate demo mode.")
     
     args = parser.parse_args()
     
@@ -113,4 +118,4 @@ if __name__ == '__main__':
     
     setup_logging(default_path=args.log_file)
     
-    main(args.data_file, args.model, args.w2v_file, args.out_dir, args.num_batches, args.nrows, args.ncols, split)
+    main(args.data_file, args.model, args.w2v_file, args.out_dir, args.num_batches, args.nrows, args.ncols, split, args.demo)

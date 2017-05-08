@@ -35,7 +35,7 @@ def generate_z(shape):
     
     return np.asarray(np.random.uniform(size=shape), dtype=config.floatX)
           
-def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id, out_dir, nrows, ncols, split):
+def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id, out_dir, nrows, ncols, split, demo):
 
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
@@ -71,6 +71,7 @@ def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id
         if subplot_num % ncols == 0:
             subplot_num += ncols
     
-    plt.suptitle(file_name)   
+    if not demo:
+        plt.suptitle(file_name)   
     plt.savefig(os.path.join(out_dir, '.'.join([file_name,'png'])))
  #   plt.show()
