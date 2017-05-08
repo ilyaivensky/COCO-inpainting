@@ -35,12 +35,12 @@ def generate_z(shape):
     
     return np.asarray(np.random.uniform(size=shape), dtype=config.floatX)
           
-def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id, out_dir, nrows, ncols):
+def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id, out_dir, nrows, ncols, split):
 
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
     
-    file_name = '-'.join([model_name, '{:03d}'.format(batch_id)])
+    file_name = '-'.join([model_name, split, '{:03d}'.format(batch_id)])
      
     subplot_num = 0
     
