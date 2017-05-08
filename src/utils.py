@@ -37,11 +37,12 @@ def generate_z(shape):
           
 def show_samples(ids, target, samples, captions, vocab_idx, model_name, batch_id, out_dir, nrows, ncols, split):
 
+
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
     
     file_name = '-'.join([model_name, split, '{:03d}'.format(batch_id)])
-     
+
     subplot_num = 0
     
     plt.figure(figsize = (nrows * 2, ncols))
