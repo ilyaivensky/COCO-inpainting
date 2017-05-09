@@ -422,7 +422,7 @@ class DCGAN(object):
              
         # Create loss expressions
        
-        loss_G = 0.5*(lasagne.objectives.binary_crossentropy(DGz, 0.9).mean()) 
+        loss_G = 0.5*(lasagne.objectives.binary_crossentropy(DGz, 0.9).mean()) \
             + 0.25*(lasagne.objectives.squared_error(Cx, CGz).mean()) \
             + 0.25*(lasagne.objectives.squared_error(x, Gz).mean())        
         loss_D_real = lasagne.objectives.binary_crossentropy(Dx, 0.9).mean()
