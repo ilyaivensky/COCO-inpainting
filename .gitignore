@@ -2,6 +2,7 @@
 /logs
 /models_gpu
 /src/*.pyc
+/.settings
 /preprocessed
 /resources
 /results
