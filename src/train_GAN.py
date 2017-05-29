@@ -65,6 +65,8 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
     data_stream = data.apply_default_transformers(
         data.get_example_stream())
        
+    gan.save_params('{}.{:03d}'.format(out_model, 0))
+    
     for epoch in range(start_epoch, num_epochs):
                
         start_time = time.time()
@@ -102,15 +104,14 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
                 """ 
                 
 #                 logging.debug('real, first={}, last={}'.format(first, last))
-                last_train_D_real_loss = gan.train_D_real(first, last) * (last-first)
-                train_D_real_loss += last_train_D_real_loss
-                last_train_D_real_loss /= (last-first)
-                processed_D_real += last-first
+                last_train_D_real_loss = gan.train_D_real(first, last) 
+  #              print i, first, last, 'last_train_D_real_loss', last_train_D_real_loss
+                train_D_real_loss += last_train_D_real_loss * batch_size
+                processed_D_real += batch_size
                 
-                last_train_D_fake_loss = gan.train_D_fake(first, last) * (last-first)
-                train_D_fake_loss += last_train_D_fake_loss
-                last_train_D_fake_loss /= (last-first)
-                processed_D_fake += last-first
+                last_train_D_fake_loss = gan.train_D_fake(first, last) 
+                train_D_fake_loss += last_train_D_fake_loss * batch_size
+                processed_D_fake += batch_size
                    
                 if epoch >= delay_g and (i+1) % unroll == 0:
                     # train generator with accumulated batches
@@ -119,10 +120,10 @@ def train(data_file, out_model, out_freq, voc_size, num_epochs, batch_size, batc
                         gen_last = gen_first + batch_size
 #                         logging.debug('fake, first={}, last={}'.format(gen_first, gen_last))
                         
-                        last_train_G_loss = gan.train_G(gen_first, gen_last) * (gen_last-gen_first)
-                        train_G_loss += last_train_G_loss
-                        last_train_G_loss /= (gen_last-gen_first)
-                        processed_G += gen_last-gen_first
+                        last_train_G_loss = gan.train_G(gen_first, gen_last) 
+#                        print gen_i, gen_first, gen_last, 'last_train_G_loss', last_train_G_loss
+                        train_G_loss += last_train_G_loss * batch_size
+                        processed_G += batch_size
                         gen_i+=1
                          
             if max_example_stream_iter and it_num+1 >= max_example_stream_iter:
